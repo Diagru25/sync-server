@@ -13,7 +13,7 @@ const uploadFolderName = process.env.UPLOAD_FOLDER;
 
 var storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, 'uploads')
+        cb(null, uploadFolderName)
     },
     filename: function (req, file, cb) {
         cb(null, file.originalname)
@@ -22,11 +22,11 @@ var storage = multer.diskStorage({
 
 var upload = multer({ storage: storage });
 
-app.use(express.static(__dirname + uploadFolderName));
+app.use(express.static(__dirname + `/${uploadFolderName}/`));
 
 app.get('/download/:filename', (req, res) => {
     try {
-        const filePath = __dirname + uploadFolderName + req.params.filename;
+        const filePath = `${__dirname}/${uploadFolderName}/${req.params.filename}`;
         res.sendFile(filePath);
 
     } catch (error) {
@@ -46,7 +46,7 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
         } else {
             return res.send({
                 success: true,
-                link_file: `http://${req.headers.host}${uploadFolderName}${req.file.filename}`,
+                link_file: `http://${req.headers.host}/${uploadFolderName}/${req.file.filename}`,
             })
         }
     } catch (error) {
@@ -66,7 +66,7 @@ app.post("/api/upload/multiple", upload.array('files', 5), (req, res) => {
         } else {
             let image_list = [];
             for (const item of req.files) {
-                image_list.push(`http://${req.headers.host}${uploadFolderName}${item.filename}`);
+                image_list.push(`http://${req.headers.host}/${uploadFolderName}/${item.filename}`);
             }
             return res.send({
                 success: true,
