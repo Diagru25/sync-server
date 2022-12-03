@@ -46,7 +46,7 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
         } else {
             return res.send({
                 success: true,
-                link_file: `http://${req.headers.host}/${uploadFolderName}/${req.file.filename}`,
+                link_file: `http://${req.headers.host}/download/${req.file.filename}`,
             })
         }
     } catch (error) {
@@ -66,7 +66,7 @@ app.post("/api/upload/multiple", upload.array('files', 5), (req, res) => {
         } else {
             let image_list = [];
             for (const item of req.files) {
-                image_list.push(`http://${req.headers.host}/${uploadFolderName}/${item.filename}`);
+                image_list.push(`http://${req.headers.host}/download/${item.filename}`);
             }
             return res.send({
                 success: true,
