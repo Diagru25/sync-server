@@ -1,9 +1,17 @@
-require('dotenv').config();
-const express = require('express');
+import dotenv from 'dotenv';
+import express from 'express';
+import multer from 'multer';
+import bodyParser from 'body-parser';
+import cors from "cors";
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+
+dotenv.config()
 const app = express();
-const multer = require('multer');
-const bodyParser = require('body-parser');
-const cors = require('cors');
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 app.use(cors());
 app.use(bodyParser.json({ limit: '50mb' }));
