@@ -8,7 +8,7 @@ import FormData from "form-data";
 dotenv.config()
 const watchDir = process.env.WATCH_FOLDER
 
-import { splitParagraph } from "./utils/string_helper.js";
+import { splitParagraph } from "../utils/string_helper.js";
 
 const callApi = async (filePath) => {
     //console.log(filePath);
@@ -37,12 +37,6 @@ class Watcher extends events.EventEmitter {
     // }
 
     readFile(filePath) {
-
-        // const formData = new FormData();
-        // formData.append("file", fs.createReadStream(filePath));
-
-        // axios.post("http://165.22.96.229:5000/api/upload", formData)
-
         callApi(filePath);
 
         fs.readFile(filePath, 'utf8', (err, data) => {
