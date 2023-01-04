@@ -4,8 +4,9 @@ import multer from 'multer';
 import bodyParser from 'body-parser';
 import cors from "cors";
 import path from 'path';
+import fs from "fs";
 import { fileURLToPath } from 'url';
-import { appendAgentFile, readFileLineByLine } from '../utils/string_helper.js';
+import { appendAgentFile, readFileLineByLine, splitParagraph, getDayOfYear } from '../utils/string_helper.js';
 
 
 dotenv.config()
@@ -22,14 +23,40 @@ const uploadFolderName = process.env.UPLOAD_FOLDER;
 
 var storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, uploadFolderName)
+        return cb(null, uploadFolderName)
     },
     filename: function (req, file, cb) {
-        cb(null, file.originalname)
-    }
+        const day = getDayOfYear();
+        const filename = `${day.padStart(3, '0')}0.${new Date().getFullYear().toString().slice(-2)}n`;
+
+        if (fs.existsSync(path.join(uploadFolderName, filename))) {
+            const newFileName = Date.now().valueOf() + '_' + filename;
+            return cb(null, newFileName);
+        } else {
+            return cb(null, filename)
+        }
+    },
+
 })
 
-var upload = multer({ storage: storage });
+var upload = multer({
+    storage: storage,
+    fileFilter: function (req, file, cb) {
+        if (file.originalname.includes('_')) {
+            req.fileValidationError = `Tên file "${file.originalname}" không được chứa ký tự đặc biệt!.`;
+            return cb(null, false, req.fileValidationError);
+        }
+        else if (file.mimetype !== "application/octet-stream" && file.mimetype !== "text/plain") {
+
+            req.fileValidationError = `Định dạng file "${file.originalname}" không đúng!.`;
+            return cb(null, false, req.fileValidationError);
+        }
+        else {
+            return cb(null, true);
+        }
+
+    }
+});
 
 app.use(express.static(__dirname + `/${uploadFolderName}/`));
 
@@ -38,7 +65,7 @@ app.get('/api/agents', (req, res) => {
         const lines = readFileLineByLine('./assets/agents.txt');
         const data = lines.map((line) => {
             const paths = line.split(' ');
-            if(paths.length !== 3) return {
+            if (paths.length !== 3) return {
 
             }
 
@@ -79,13 +106,15 @@ app.post('/api/agents/status', (req, res) => {
             })
         else
             return res.send({
-                success: false
+                success: false,
+                message: "Không ghi được vào file."
             })
     }
     catch (error) {
         console.log(error);
         return res.send({
-            message: "Lỗi không xác định"
+            success: false,
+            message: "Lỗi không xác định."
         })
     }
 })
@@ -104,20 +133,52 @@ app.get('/api/download/:filename', (req, res) => {
 
 app.post('/api/upload', upload.single('file'), (req, res) => {
     try {
+        if (req.fileValidationError) {
+            return res.send({
+                success: false,
+                message: req.fileValidationError
+            });
+        }
+
         if (!req.file) {
             return res.send({
-                success: false
+                success: false,
+                message: "Không tồn tại file."
             });
 
         } else {
+            const newFilename = req.file.filename;
+            const oldFilename = req.file.filename.split("_")[1];
+
+            if (oldFilename && fs.existsSync(path.join(uploadFolderName, oldFilename))) {
+                const newFileData = fs.readFileSync(process.env.UPLOAD_FOLDER + newFilename, 'UTF-8');
+                const newParagraph = splitParagraph(newFileData);
+                const oldFileData = fs.readFileSync(process.env.UPLOAD_FOLDER + oldFilename, 'UTF-8');
+                const oldParagraph = splitParagraph(oldFileData);
+
+                const firstElement = newParagraph.shift();
+
+                const mergedData = [...new Set([...oldParagraph, ...newParagraph])];
+
+                if (firstElement.split('\n').length === 10) mergedData[0] = firstElement;
+
+                // append data to old file
+                fs.writeFileSync(process.env.UPLOAD_FOLDER + oldFilename, mergedData.join(""));
+
+                //delete file
+                fs.unlinkSync(process.env.UPLOAD_FOLDER + req.file.filename);
+            }
+
+
             return res.send({
                 success: true,
-                link_file: `http://${req.headers.host}/api/download/${req.file.filename}`,
+                link_file: `http://${req.headers.host}/api/download/${oldFilename ? oldFilename : req.file.filename}`,
             })
         }
     } catch (error) {
         return res.send({
-            success: false
+            success: false,
+            message: "Lỗi không xác định."
         });
     }
 
@@ -132,7 +193,7 @@ app.post("/api/upload/multiple", upload.array('files', 5), (req, res) => {
         } else {
             let image_list = [];
             for (const item of req.files) {
-                image_list.push(`http://${req.headers.host}/download/${item.filename}`);
+                image_list.push(`http://${req.headers.host}/api/download/${item.filename}`);
             }
             return res.send({
                 success: true,
