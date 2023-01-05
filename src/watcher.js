@@ -5,6 +5,8 @@ import fs from "fs";
 import axios from 'axios';
 import FormData from "form-data";
 import { getDayOfYear } from '../utils/string_helper.js';
+import path from 'path';
+import { REGEX_EXT } from '../utils/constant.js';
 
 dotenv.config()
 const watchDir = process.env.WATCH_FOLDER
@@ -34,12 +36,24 @@ class Watcher extends events.EventEmitter {
     }
 
     async uploadFile(filePath) {
-        const result = await uploadFileToServer(filePath);
-        if(result) {
-            console.log(result);
+        try {
+            const ext = path.extname(filePath);
+            if (ext.match(REGEX_EXT)) {
+                const result = await uploadFileToServer(filePath);
+                if (result) {
+                    console.log(result);
+                }
+                else {
+                    console.log('Upload file thất bại.');
+                }
+            }
+            else {
+                console.log(`[WATCHER] Định dạng file không đúng: ${filePath}.`);
+                return;
+            }
         }
-        else {
-            console.log('Upload file thất bại.');
+        catch (error) {
+            console.log("uploadFile: ", error);
         }
     }
 
