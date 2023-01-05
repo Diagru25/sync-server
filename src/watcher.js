@@ -18,7 +18,7 @@ const uploadFileToServer = async (filePath) => {
         const filename = `${day.padStart(3, '0')}0.${new Date().getFullYear().toString().slice(-2)}n`;
 
         form.append('file', file, filename);
-        const res = await axios.post("http://localhost:5000/api/upload", form);
+        const res = await axios.post(`${process.env.SERVER_URL}/api/upload`, form);
         return res.data;
     }
     catch (error) {
