@@ -176,6 +176,7 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
             })
         }
     } catch (error) {
+        console.log("/api/upload: ", error);
         return res.send({
             success: false,
             message: "Lỗi không xác định."
