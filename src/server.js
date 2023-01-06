@@ -119,6 +119,24 @@ app.post('/api/agents/status', (req, res) => {
     }
 })
 
+app.get('/api/files', (req, res) => {
+    try {
+        const files = fs.readdirSync(__dirname + '/' + uploadFolderName);
+        
+        return res.send({
+            success: true,
+            data: files
+        })
+    }
+    catch(error) {
+        console.log(error);
+        return res.send({
+            success: false,
+            message: "Lỗi không xác định."
+        })
+    }
+})
+
 app.get('/api/download/:filename', (req, res) => {
     try {
         const filePath = `${__dirname}/${uploadFolderName}/${req.params.filename}`;
