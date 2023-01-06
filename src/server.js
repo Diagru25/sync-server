@@ -122,7 +122,7 @@ app.post('/api/agents/status', (req, res) => {
 app.get('/api/files', (req, res) => {
     try {
         const files = fs.readdirSync(__dirname + '/' + uploadFolderName);
-        
+
         return res.send({
             success: true,
             data: files
@@ -178,7 +178,7 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
 
                 const mergedData = [...new Set([...oldParagraph, ...newParagraph])];
 
-                if (firstElement.split('\n').length === 10) mergedData[0] = firstElement;
+                if (firstElement.split('\n').length === 9) mergedData[0] = firstElement;
 
                 // append data to old file
                 fs.writeFileSync(process.env.UPLOAD_FOLDER + oldFilename, mergedData.join(""));
