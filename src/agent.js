@@ -8,7 +8,7 @@ dotenv.config()
 const sendStatusAgent = async () => {
     try {
         // get ngrok info
-        const ResNgrok = await axios.get('http://127.0.0.1:4040/api/tunnels');
+        const ResNgrok = await axios.get('http://localhost:4040/api/tunnels');
         const {tunnels} = ResNgrok.data;
         if(tunnels.length === 0) {
             console.log('ngrok is not running!');
