@@ -65,14 +65,15 @@ app.get('/api/agents', (req, res) => {
         const lines = readFileLineByLine('./assets/agents.txt');
         const data = lines.map((line) => {
             const paths = line.split(' ');
-            if (paths.length !== 3) return {
+            if (paths.length !== 4) return {
 
             }
 
             const obj = {
                 name: paths[0],
                 IP: paths[1],
-                updatedAt: new Date(Number(paths[2])).toISOString()
+                publicUrl: paths[2],
+                updatedAt: new Date(Number(paths[3])).toISOString()
             }
 
             return obj;
@@ -96,7 +97,7 @@ app.post('/api/agents/status', (req, res) => {
         const data = req.body;
         const agentIp = req.socket.remoteAddress;
         const updatedAt = new Date();
-        const lineData = `${data.name || 'Unknown-Computer'} ${agentIp} ${updatedAt.getTime()}`;
+        const lineData = `${data.name || 'Unknown-Computer'} ${agentIp} ${data.publicUrl} ${updatedAt.getTime()}`;
 
         const isAppend = appendAgentFile('./assets/agents.txt', data.name, lineData);
 
