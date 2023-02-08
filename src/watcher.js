@@ -4,7 +4,7 @@ import events from "events";
 import fs from "fs";
 import axios from 'axios';
 import FormData from "form-data";
-import { getDayOfYear } from '../utils/string_helper.js';
+import { getDayOfYear, checkTypeRinex } from '../utils/string_helper.js';
 import path from 'path';
 import { REGEX_EXT } from '../utils/constant.js';
 
@@ -13,11 +13,14 @@ const watchDir = process.env.WATCH_FOLDER
 
 const uploadFileToServer = async (filePath) => {
     try {
-        const file = await fs.readFileSync(filePath);
+        const file = fs.readFileSync(filePath);
         const form = new FormData();
 
+        const typeRinex = checkTypeRinex(filePath);
+
         const day = getDayOfYear();
-        const filename = `${day.padStart(3, '0')}0.${new Date().getFullYear().toString().slice(-2)}n`;
+        let filename = `${day.padStart(3, '0')}0.${new Date().getFullYear().toString().slice(-2)}n`;
+        filename = typeRinex ? `${typeRinex}brdc${filename}` : filename;
 
         form.append('file', file, filename);
         const res = await axios.post(`${process.env.SERVER_URL}/api/upload`, form);
