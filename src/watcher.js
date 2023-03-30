@@ -36,7 +36,7 @@ const uploadFileToServer = async (filePath) => {
     //console.log(typeRinex, filename);
     //return true;
   } catch (error) {
-    //console.log("call error: ", error);
+    console.log("call error: ", error);
     return false;
   }
 };
@@ -53,7 +53,7 @@ class Watcher extends events.EventEmitter {
       const ext = path.extname(filePath);
       if (ext.toLowerCase().match(REGEX_EXT)) {
         const result = await uploadFileToServer(filePath);
-        if (result === true) {
+        if (result) {
           console.log(result);
         } else {
           console.log("Upload file thất bại.");
