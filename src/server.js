@@ -139,7 +139,7 @@ app.get("/api/files", (req, res) => {
 
     return res.send({
       success: true,
-      data: files,
+      data: files.map(item => `http://${req.headers.host}/api/download/${item}`),
     });
   } catch (error) {
     console.log(error);
