@@ -196,6 +196,9 @@ app.post("/api/upload", upload.single("file"), (req, res) => {
 
         const firstElement = newParagraph.shift();
 
+        console.log("old phara: ", oldParagraph);
+        console.log("new phara: ", newParagraph);
+
         const mergedData = [...new Set([...oldParagraph, ...newParagraph])];
 
         if (firstElement.split("\n").length === 9) mergedData[0] = firstElement;
