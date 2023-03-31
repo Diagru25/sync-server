@@ -196,12 +196,12 @@ app.post("/api/upload", upload.single("file"), (req, res) => {
 
         const firstElement = newParagraph.shift();
 
-        console.log("old phara: ", oldParagraph);
-        console.log("new phara: ", newParagraph);
-
         const mergedData = [...new Set([...oldParagraph, ...newParagraph])];
 
-        if (firstElement.split("\n").length === 9) mergedData[0] = firstElement;
+        if (firstElement.includes("HEADER")) mergedData[0] = firstElement;
+
+        console.log("merged arr: ", mergedData);
+        console.log("length merged arr: ", mergedData.length);
 
         // append data to old file
         fs.writeFileSync(
