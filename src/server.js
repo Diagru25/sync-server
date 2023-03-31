@@ -139,7 +139,9 @@ app.get("/api/files", (req, res) => {
 
     return res.send({
       success: true,
-      data: files.map(item => `http://${req.headers.host}/api/download/${item}`),
+      data: files.map(
+        (item) => `http://${req.headers.host}/api/download/${item}`
+      ),
     });
   } catch (error) {
     console.log(error);
@@ -188,20 +190,27 @@ app.post("/api/upload", upload.single("file"), (req, res) => {
           "UTF-8"
         );
         const newParagraph = splitParagraph(newFileData);
+        const firstElement = _newParagraph.shift();
+        const _newParagraph = [];
+        for (let i = 0; i < newParagraph.length; i += 2)
+          _newParagraph.push(newParagraph[i] + newParagraph[i + 1]);
+
         const oldFileData = fs.readFileSync(
           process.env.UPLOAD_FOLDER + oldFilename,
           "UTF-8"
         );
         const oldParagraph = splitParagraph(oldFileData);
+        const _oldParagraph = [];
+        for (let i = 0; i < oldParagraph.length; i += 2)
+          _oldParagraph.push(oldParagraph[i] + oldParagraph[i + 1]);
 
-        const firstElement = newParagraph.shift();
 
-        const mergedData = [...new Set([...oldParagraph, ...newParagraph])];
+        const mergedData = [...new Set([..._oldParagraph, ..._newParagraph])];
 
         if (firstElement.includes("HEADER")) mergedData[0] = firstElement;
 
         console.log("merged arr: ", mergedData);
-        console.log("length merged arr: ", mergedData.length);
+        console.log("new phara: ", newParagraph);
 
         // append data to old file
         fs.writeFileSync(
