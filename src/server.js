@@ -190,7 +190,7 @@ app.post("/api/upload", upload.single("file"), (req, res) => {
           "UTF-8"
         );
         const newParagraph = splitParagraph(newFileData);
-        const firstElement = _newParagraph.shift();
+        const firstElement = newParagraph.shift();
         const _newParagraph = [];
         for (let i = 0; i < newParagraph.length; i += 2)
           _newParagraph.push(newParagraph[i] + newParagraph[i + 1]);
