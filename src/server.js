@@ -193,24 +193,32 @@ app.post("/api/upload", upload.single("file"), (req, res) => {
         const firstElement = newParagraph.shift();
         const _newParagraph = [];
         for (let i = 0; i < newParagraph.length; i += 2)
-          _newParagraph.push(newParagraph[i] + newParagraph[i + 1]);
+        {
+            if (newParagraph[i] && newParagraph[i + 1])
+              _newParagraph.push(newParagraph[i] + newParagraph[i + 1]);
+        }
+          
 
         const oldFileData = fs.readFileSync(
           process.env.UPLOAD_FOLDER + oldFilename,
           "UTF-8"
         );
         const oldParagraph = splitParagraph(oldFileData);
+        const firstElementOld = oldParagraph.shift();
         const _oldParagraph = [];
         for (let i = 0; i < oldParagraph.length; i += 2)
-          _oldParagraph.push(oldParagraph[i] + oldParagraph[i + 1]);
-
+        {
+            if(oldParagraph[i] && oldParagraph[i+1])
+                _oldParagraph.push(oldParagraph[i] + oldParagraph[i + 1]);
+        }
+          
 
         const mergedData = [...new Set([..._oldParagraph, ..._newParagraph])];
 
-        if (firstElement.includes("HEADER")) mergedData[0] = firstElement;
+        if (firstElement.includes("HEADER")) mergedData.unshift(firstElement);
 
-        console.log("merged arr: ", mergedData);
-        console.log("new phara: ", newParagraph);
+        //console.log("old arr: ",_oldParagraph.length, _oldParagraph);
+        //console.log("new phara: ", _newParagraph);
 
         // append data to old file
         fs.writeFileSync(
