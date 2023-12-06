@@ -84,6 +84,8 @@ export const checkTypeRinex = (filePath) => {
     //console.log(file);
     const firstLine = file.split(/\r?\n/)[0];
 
+    console.log(file.split(/\r?\n/));
+
     if (
       firstLine.includes("C:") ||
       firstLine.includes("BeiDou") ||
@@ -92,9 +94,50 @@ export const checkTypeRinex = (filePath) => {
       return "BDS";
 
     if (firstLine.includes("G:") || firstLine.includes("GPS")) return "GPS";
-        
+
     return "";
-} catch (error) {
+  } catch (error) {
     return "";
   }
+};
+
+export const compareTwoData = (nasaData, ownData) => {
+  const defaultArr = nasaData.filter(
+    (el) =>
+      !ownData.find((ownEl) => {
+        el.split(REGEX_SPLIT)[0] === ownEl.split(REGEX_SPLIT)[0];
+      })
+  );
+  const allArr = defaultArr.concat(ownData);
+
+  const sortedArr = allArr.sort((a, b) => {
+    const strOneTime = a.match(REGEX_SPLIT)[0];
+    const strTwoTime = b.match(REGEX_SPLIT)[0];
+
+    const oneArr = strOneTime
+      .split(" ")
+      .filter((el) => el)
+      .slice(1);
+
+    const twoArr = strTwoTime
+      .split(" ")
+      .filter((el) => el)
+      .slice(1);
+
+    let rt = 1;
+
+    for (let i = 0; i < oneArr.length; i++) {
+      if (oneArr[i] === twoArr[i]) continue;
+
+      if (Number(oneArr[i]) < Number(twoArr[i])) {
+        rt = -1;
+      } else {
+        rt = 1;
+      }
+    }
+
+    return rt;
+  });
+
+  return sortedArr;
 };

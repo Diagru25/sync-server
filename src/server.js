@@ -11,6 +11,7 @@ import {
   readFileLineByLine,
   splitParagraph,
   getDayOfYear,
+  compareTwoData,
 } from "../utils/string_helper.js";
 
 dotenv.config();
@@ -24,6 +25,7 @@ app.use(bodyParser.json({ limit: "50mb" }));
 app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
 
 const uploadFolderName = process.env.UPLOAD_FOLDER;
+const nasaFolderName = process.env.NASA_FOLDER;
 
 var storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -152,6 +154,25 @@ app.get("/api/files", (req, res) => {
   }
 });
 
+app.get("/api/nasa_files", (req, res) => {
+  try {
+    const files = fs.readdirSync(__dirname + "/" + nasaFolderName);
+
+    return res.send({
+      success: true,
+      data: files.map(
+        (item) => `http://${req.headers.host}/api/download/${item}`
+      ),
+    });
+  } catch (error) {
+    console.log(error);
+    return res.send({
+      success: false,
+      message: "Lỗi không xác định.",
+    });
+  }
+});
+
 app.get("/api/download/:filename", (req, res) => {
   try {
     const filePath = `${__dirname}/${uploadFolderName}/${req.params.filename}`;
@@ -165,6 +186,8 @@ app.get("/api/download/:filename", (req, res) => {
 
 app.post("/api/upload", upload.single("file"), (req, res) => {
   try {
+    const start = performance.now();
+
     if (req.fileValidationError) {
       return res.send({
         success: false,
@@ -185,20 +208,22 @@ app.post("/api/upload", upload.single("file"), (req, res) => {
         oldFilename &&
         fs.existsSync(path.join(uploadFolderName, oldFilename))
       ) {
+        //new file
         const newFileData = fs.readFileSync(
           process.env.UPLOAD_FOLDER + newFilename,
           "UTF-8"
         );
+
         const newParagraph = splitParagraph(newFileData);
+
         const firstElement = newParagraph.shift();
         const _newParagraph = [];
-        for (let i = 0; i < newParagraph.length; i += 2)
-        {
-            if (newParagraph[i] && newParagraph[i + 1])
-              _newParagraph.push(newParagraph[i] + newParagraph[i + 1]);
+        for (let i = 0; i < newParagraph.length; i += 2) {
+          if (newParagraph[i] && newParagraph[i + 1])
+            _newParagraph.push(newParagraph[i] + newParagraph[i + 1]);
         }
-          
 
+        //old file
         const oldFileData = fs.readFileSync(
           process.env.UPLOAD_FOLDER + oldFilename,
           "UTF-8"
@@ -206,19 +231,40 @@ app.post("/api/upload", upload.single("file"), (req, res) => {
         const oldParagraph = splitParagraph(oldFileData);
         const firstElementOld = oldParagraph.shift();
         const _oldParagraph = [];
-        for (let i = 0; i < oldParagraph.length; i += 2)
-        {
-            if(oldParagraph[i] && oldParagraph[i+1])
-                _oldParagraph.push(oldParagraph[i] + oldParagraph[i + 1]);
+        for (let i = 0; i < oldParagraph.length; i += 2) {
+          if (oldParagraph[i] && oldParagraph[i + 1])
+            _oldParagraph.push(oldParagraph[i] + oldParagraph[i + 1]);
         }
-          
 
-        const mergedData = [...new Set([..._oldParagraph, ..._newParagraph])];
+        let mergedData = [...new Set([..._oldParagraph, ..._newParagraph])];
 
+        //nasa file
+        const day = getDayOfYear();
+        const nasaFileName = `brdc${day.padStart(3, "0")}0.${new Date()
+          .getFullYear()
+          .toString()
+          .slice(-2)}n`;
+
+        if (fs.existsSync(path.join(process.env.NASA_FOLDER, nasaFileName))) {
+          const nasaFileData = fs.readFileSync(
+            process.env.NASA_FOLDER + nasaFileName,
+            "UTF-8"
+          );
+
+          const nasaParagraph = splitParagraph(nasaFileData);
+          nasaParagraph.shift();
+          const _nasaParagraph = [];
+          for (let i = 0; i < nasaParagraph.length; i += 2) {
+            if (nasaParagraph[i] && nasaParagraph[i + 1])
+              _nasaParagraph.push(nasaParagraph[i] + nasaParagraph[i + 1]);
+          }
+
+          const comparedData = compareTwoData(_nasaParagraph, mergedData);
+          mergedData = [...comparedData];
+        }
+
+        // add header
         if (firstElement.includes("HEADER")) mergedData.unshift(firstElement);
-
-        //console.log("old arr: ",_oldParagraph.length, _oldParagraph);
-        //console.log("new phara: ", _newParagraph);
 
         // append data to old file
         fs.writeFileSync(
@@ -245,6 +291,7 @@ app.post("/api/upload", upload.single("file"), (req, res) => {
     });
   }
 });
+
 app.post("/api/upload/multiple", upload.array("files", 5), (req, res) => {
   try {
     if (!req.files) {

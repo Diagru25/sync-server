@@ -6,8 +6,13 @@
   "type": "module",
   "scripts": {
     "watcher": "nodemon ./src/watcher.js",
+    "prod_watcher": "set NODE_ENV=production && node ./src/watcher.js",
     "server": "nodemon ./src/server.js",
+    "prod_server": "set NODE_ENV=production && node ./src/server.js",
     "agent": "nodemon ./src/agent.js",
+    "prod_agent": "set NODE_ENV=production && node ./src/agent.js",
+    "sync_data": "nodemon ./src/sync_nasa",
+    "prod_sync_data": "set NODE_ENV=production && node ./src/sync_nasa",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

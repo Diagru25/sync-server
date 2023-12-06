@@ -1,6 +1,7 @@
 assets/
 node_modules/
 watch/
+watcher/
+nasa/
 uploads/
 .env
-package-lock.json
