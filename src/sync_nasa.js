@@ -11,11 +11,11 @@ const syncNasaData = async () => {
   try {
     const day = getDayOfYear();
     const fileName = `brdc${day.padStart(3, "0")}0.${new Date()
-      .getFullYear()
+      .getUTCFullYear()
       .toString()
       .slice(-2)}n.gz`;
 
-    const urlDownload = `"https://cddis.nasa.gov/archive/gnss/data/daily/${new Date().getFullYear()}/brdc/${fileName}"`;
+    const urlDownload = `"https://cddis.nasa.gov/archive/gnss/data/daily/${new Date().getUTCFullYear()}/brdc/${fileName}"`;
     const command = `curl -c cookie.txt --netrc-file .netrc -L -o ${nasaFolderName}${fileName} ${urlDownload}`;
 
     exec(command, { encoding: "utf-8" }, (error, stdout, stderr) => {

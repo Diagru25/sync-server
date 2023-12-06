@@ -25,7 +25,7 @@ const uploadFileToServer = async (filePath) => {
 
     const day = getDayOfYear();
     let filename = `${day.padStart(3, "0")}0.${new Date()
-      .getFullYear()
+      .getUTCFullYear()
       .toString()
       .slice(-2)}n`;
     filename = typeRinex ? `${typeRinex}brdc${filename}` : filename;
@@ -49,7 +49,7 @@ class Watcher extends events.EventEmitter {
 
   async uploadFile(filePath) {
     try {
-        console.log("file path: ", filePath);
+      console.log("file path: ", filePath);
       const ext = path.extname(filePath);
       if (ext.toLowerCase().match(REGEX_EXT)) {
         const result = await uploadFileToServer(filePath);

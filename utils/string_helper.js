@@ -67,11 +67,12 @@ export const appendAgentFile = (filePath, name, lineData) => {
 
 export const getDayOfYear = () => {
   const now = new Date();
-  const start = new Date(now.getFullYear(), 0, 0);
+  const now_utc = new Date(now.toUTCString().slice(0, -4));
+  const start = new Date(now_utc.getUTCFullYear(), 0, 0);
   const diff =
-    now -
+    now_utc -
     start +
-    (start.getTimezoneOffset() - now.getTimezoneOffset()) * 60 * 1000;
+    (start.getTimezoneOffset() - now_utc.getTimezoneOffset()) * 60 * 1000;
   const oneDay = 1000 * 60 * 60 * 24;
   const day = Math.floor(diff / oneDay);
   return day.toString();

@@ -36,7 +36,7 @@ var storage = multer.diskStorage({
 
     const day = getDayOfYear();
     const tempFileName = `${day.padStart(3, "0")}0.${new Date()
-      .getFullYear()
+      .getUTCFullYear()
       .toString()
       .slice(-2)}n`;
 
@@ -186,8 +186,6 @@ app.get("/api/download/:filename", (req, res) => {
 
 app.post("/api/upload", upload.single("file"), (req, res) => {
   try {
-    const start = performance.now();
-
     if (req.fileValidationError) {
       return res.send({
         success: false,
@@ -241,7 +239,7 @@ app.post("/api/upload", upload.single("file"), (req, res) => {
         //nasa file
         const day = getDayOfYear();
         const nasaFileName = `brdc${day.padStart(3, "0")}0.${new Date()
-          .getFullYear()
+          .getUTCFullYear()
           .toString()
           .slice(-2)}n`;
 
