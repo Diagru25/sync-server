@@ -161,7 +161,7 @@ app.get("/api/nasa_files", (req, res) => {
     return res.send({
       success: true,
       data: files.map(
-        (item) => `http://${req.headers.host}/api/download/${item}?type="nasa"`
+        (item) => `http://${req.headers.host}/api/download/${item}?type=nasa`
       ),
     });
   } catch (error) {
