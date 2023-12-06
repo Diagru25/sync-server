@@ -161,7 +161,7 @@ app.get("/api/nasa_files", (req, res) => {
     return res.send({
       success: true,
       data: files.map(
-        (item) => `http://${req.headers.host}/api/download/${item}`
+        (item) => `http://${req.headers.host}/api/download/${item}?type="nasa"`
       ),
     });
   } catch (error) {
@@ -175,7 +175,11 @@ app.get("/api/nasa_files", (req, res) => {
 
 app.get("/api/download/:filename", (req, res) => {
   try {
-    const filePath = `${__dirname}/${uploadFolderName}/${req.params.filename}`;
+    const query = req.query;
+    let folderName = uploadFolderName;
+
+    if (query.type === "nasa") folderName = nasaFolderName;
+    const filePath = `${__dirname}/${folderName}/${req.params.filename}`;
     res.sendFile(filePath);
   } catch (error) {
     return res.send({
