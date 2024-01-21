@@ -41,7 +41,7 @@ var storage = multer.diskStorage({
       .slice(-2)}n`;
 
     const filename = prefixFileName[0]
-      ? `${prefixFileName[0]}brcd${tempFileName}`
+      ? `${prefixFileName[0]}brdc${tempFileName}`
       : tempFileName;
 
     if (fs.existsSync(path.join(uploadFolderName, filename))) {
