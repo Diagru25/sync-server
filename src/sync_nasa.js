@@ -56,20 +56,18 @@ const syncBeidou = () => {
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         },
       })
-      .then((res) => console.log(res))
+      .then((res) => console.log(res.data.length))
       .catch((err) => console.log(err));
   } catch (error) {}
 };
 
-const task_bd = cron.schedule("30 * * * * *", () => {
-  syncBeidou();
-});
-
-const task = cron.schedule("0 5 * * * *", () => {
+const task = cron.schedule("0 4 * * * *", () => {
   syncNasaData();
 });
 
-// task.start();
-// task_bd.start();
+const task_bd = cron.schedule("0 5 * * * *", () => {
+  syncBeidou();
+});
 
-syncBeidou();
+task.start();
+//task_bd.start();
