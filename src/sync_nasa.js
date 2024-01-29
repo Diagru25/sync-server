@@ -61,7 +61,7 @@ const syncBeidou = () => {
   } catch (error) {}
 };
 
-const task = cron.schedule("0 4 * * * *", () => {
+const task = cron.schedule("*/5 * * * *", () => {
   syncNasaData();
 });
 
