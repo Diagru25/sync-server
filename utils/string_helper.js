@@ -102,16 +102,8 @@ export const checkTypeRinex = (filePath) => {
   }
 };
 
-export const compareTwoData = (nasaData, ownData) => {
-  const defaultArr = nasaData.filter(
-    (el) =>
-      !ownData.find((ownEl) => {
-        el.split(REGEX_SPLIT)[0] === ownEl.split(REGEX_SPLIT)[0];
-      })
-  );
-  const allArr = defaultArr.concat(ownData);
-
-  const sortedArr = allArr.sort((a, b) => {
+export const sortGpsData = (arr) => {
+  const sortedArr = arr.sort((a, b) => {
     const strOneTime = a.match(REGEX_SPLIT)[0];
     const strTwoTime = b.match(REGEX_SPLIT)[0];
 
@@ -139,6 +131,20 @@ export const compareTwoData = (nasaData, ownData) => {
 
     return rt;
   });
+
+  return sortedArr;
+};
+
+export const compareTwoData = (nasaData, ownData) => {
+  const defaultArr = nasaData.filter(
+    (el) =>
+      !ownData.find((ownEl) => {
+        el.split(REGEX_SPLIT)[0] === ownEl.split(REGEX_SPLIT)[0];
+      })
+  );
+  const allArr = defaultArr.concat(ownData);
+
+  const sortedArr = sortGpsData(allArr);
 
   return sortedArr;
 };

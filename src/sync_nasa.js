@@ -3,6 +3,9 @@ import cron from "node-cron";
 import { getDayOfYear } from "../utils/string_helper.js";
 import { exec } from "node:child_process";
 import axios from "axios";
+import fs from "fs";
+import path from "path";
+import { splitParagraph, sortGpsData } from "../utils/string_helper.js";
 
 dotenv.config();
 
@@ -36,6 +39,69 @@ const syncNasaData = async () => {
             return;
           }
           console.log("done extract");
+
+          const day = getDayOfYear();
+          const nasaFileName = `brdc${day.padStart(3, "0")}0.${new Date()
+            .getUTCFullYear()
+            .toString()
+            .slice(-2)}n`;
+          const gpsCombineFileName = `GPS${nasaFileName}`;
+
+          const nasaFileData = fs.readFileSync(
+            process.env.NASA_FOLDER + nasaFileName,
+            "UTF-8"
+          );
+
+          if (
+            fs.existsSync(
+              path.join(process.env.UPLOAD_FOLDER, gpsCombineFileName)
+            )
+          ) {
+            const nasaParagraph = splitParagraph(nasaFileData);
+            nasaParagraph.shift();
+            const _nasaParagraph = [];
+            for (let i = 0; i < nasaParagraph.length; i += 2) {
+              if (nasaParagraph[i] && nasaParagraph[i + 1])
+                _nasaParagraph.push(nasaParagraph[i] + nasaParagraph[i + 1]);
+            }
+
+            const existCombineFileData = fs.readFileSync(
+              process.env.UPLOAD_FOLDER + gpsCombineFileName,
+              "UTF-8"
+            );
+
+            const existCombineFileParagraph =
+              splitParagraph(existCombineFileData);
+            const existHeader = existCombineFileParagraph.shift();
+            const _existCombineFileParagraph = [];
+            for (let i = 0; i < existCombineFileParagraph.length; i += 2) {
+              if (
+                existCombineFileParagraph[i] &&
+                existCombineFileParagraph[i + 1]
+              )
+                _existCombineFileParagraph.push(
+                  existCombineFileParagraph[i] +
+                    existCombineFileParagraph[i + 1]
+                );
+            }
+            let mergedData = [
+              ...new Set([..._existCombineFileParagraph, ..._nasaParagraph]),
+            ];
+
+            const sortedArr = sortGpsData(mergedData);
+
+            if (existHeader.includes("HEADER")) sortedArr.unshift(existHeader);
+
+            fs.writeFileSync(
+              process.env.UPLOAD_FOLDER + gpsCombineFileName,
+              sortedArr.join("")
+            );
+          } else {
+            fs.writeFileSync(
+              process.env.UPLOAD_FOLDER + gpsCombineFileName,
+              nasaFileData
+            );
+          }
         }
       );
     });
