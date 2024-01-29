@@ -124,6 +124,7 @@ export const sortGpsData = (arr) => {
 
       if (Number(oneArr[i]) < Number(twoArr[i])) {
         rt = -1;
+        break;
       } else {
         rt = 1;
       }
