@@ -18,8 +18,10 @@ const sendStatusAgent = async () => {
       if (foundIndex !== -1) {
         const { public_url } = tunnels[foundIndex];
         const computerName = os.hostname();
+        const username = os.userInfo().username;
         await axios.post(`${process.env.SERVER_URL}/api/agents/status`, {
           name: computerName,
+          username: username,
           publicUrl: public_url,
         });
         return;

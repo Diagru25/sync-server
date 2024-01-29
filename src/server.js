@@ -78,13 +78,27 @@ app.get("/api/agents", (req, res) => {
     const lines = readFileLineByLine("./assets/agents.txt");
     const data = lines.map((line) => {
       const paths = line.split(" ");
-      if (paths.length !== 4) return {};
+      if (paths.length !== 5) return {};
+
+      const d = new Date(Number(paths[4]));
+      const localUpdatedAt = `${d.getDate()}/${
+        d.getMonth() + 1
+      }/${d.getFullYear()}, ${d.getHours()}:${d.getMinutes()}:${d.getSeconds()}`;
+
+      const url = paths[3].split(["://"])[1];
+      const ngrokArr = url.split(":");
+      const sshCommand = `ssh ${paths[1] || "username"}@${ngrokArr[0]} -p ${
+        ngrokArr[1]
+      }`;
 
       const obj = {
         name: paths[0],
-        IP: paths[1],
-        publicUrl: paths[2],
-        updatedAt: new Date(Number(paths[3])).toISOString(),
+        username: paths[1],
+        IP: paths[2],
+        publicUrl: paths[3],
+        updatedAt: d.toISOString(),
+        localUpdatedAt,
+        sshCommand,
       };
 
       return obj;
@@ -107,15 +121,11 @@ app.post("/api/agents/status", (req, res) => {
     const data = req.body;
     const agentIp = req.socket.remoteAddress;
     const updatedAt = new Date();
-    const lineData = `${data.name || "Unknown-Computer"} ${agentIp} ${
-      data.publicUrl
-    } ${updatedAt.getTime()}`;
+    const lineData = `${data.name || "Unknown-Computer"} ${
+      data.username
+    } ${agentIp} ${data.publicUrl} ${updatedAt.getTime()}`;
 
-    const isAppend = appendAgentFile(
-      "./assets/agents.txt",
-      data.name,
-      lineData
-    );
+    const isAppend = appendAgentFile("./assets/agents.txt", agentIp, lineData);
 
     if (isAppend)
       return res.send({

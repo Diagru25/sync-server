@@ -31,14 +31,14 @@ export const readFileLineByLine = (filePath, mode = 0) => {
   }
 };
 
-export const appendAgentFile = (filePath, name, lineData) => {
+export const appendAgentFile = (filePath, ip, lineData) => {
   try {
     const lines = readFileLineByLine(filePath);
 
     let isChange = false;
     for (let i = 0; i < lines.length; i++) {
       const paths = lines[i].split(" ");
-      const isExisted = paths.includes(name);
+      const isExisted = paths.includes(ip);
       if (isExisted) {
         lines[i] = lineData;
         isChange = true;
