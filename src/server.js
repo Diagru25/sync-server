@@ -83,7 +83,7 @@ app.get("/api/agents", (req, res) => {
       const d = new Date(Number(paths[4]));
       const localUpdatedAt = `${d.getDate()}/${
         d.getMonth() + 1
-      }/${d.getFullYear()}, ${d.getHours()}:${d.getMinutes()}:${d.getSeconds()}`;
+      }/${d.getFullYear()}, ${d.getHours()}:${d.getMinutes()}:${d.getSeconds()} UTC`;
 
       const url = paths[3].split(["://"])[1];
       const ngrokArr = url.split(":");
@@ -96,8 +96,7 @@ app.get("/api/agents", (req, res) => {
         username: paths[1],
         IP: paths[2],
         publicUrl: paths[3],
-        updatedAt: d.toISOString(),
-        localUpdatedAt,
+        updatedAt: localUpdatedAt,
         sshCommand,
       };
 
