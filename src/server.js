@@ -216,66 +216,78 @@ app.post("/api/upload", upload.single("file"), (req, res) => {
           "UTF-8"
         );
 
-        const newParagraph = splitParagraph(newFileData);
-
-        const firstElement = newParagraph.shift();
-        const _newParagraph = [];
-        for (let i = 0; i < newParagraph.length; i += 2) {
-          if (newParagraph[i] && newParagraph[i + 1])
-            _newParagraph.push(newParagraph[i] + newParagraph[i + 1]);
-        }
-
-        //old file
-        const oldFileData = fs.readFileSync(
-          process.env.UPLOAD_FOLDER + oldFilename,
-          "UTF-8"
-        );
-        const oldParagraph = splitParagraph(oldFileData);
-        const firstElementOld = oldParagraph.shift();
-        const _oldParagraph = [];
-        for (let i = 0; i < oldParagraph.length; i += 2) {
-          if (oldParagraph[i] && oldParagraph[i + 1])
-            _oldParagraph.push(oldParagraph[i] + oldParagraph[i + 1]);
-        }
-
-        let mergedData = [...new Set([..._oldParagraph, ..._newParagraph])];
-
-        //nasa file
-        const day = getDayOfYear();
-        const nasaFileName = `brdc${day.padStart(3, "0")}0.${new Date()
-          .getUTCFullYear()
-          .toString()
-          .slice(-2)}n`;
-
-        if (fs.existsSync(path.join(process.env.NASA_FOLDER, nasaFileName))) {
-          const nasaFileData = fs.readFileSync(
-            process.env.NASA_FOLDER + nasaFileName,
-            "UTF-8"
+        //Nếu là file BEIDOU thì lưu luôn
+        if (newFilename.includes("BDS") || oldFilename.includes("BDS")) {
+          // append data to old file
+          fs.writeFileSync(
+            process.env.UPLOAD_FOLDER + oldFilename,
+            newFileData
           );
 
-          const nasaParagraph = splitParagraph(nasaFileData);
-          nasaParagraph.shift();
-          const _nasaParagraph = [];
-          for (let i = 0; i < nasaParagraph.length; i += 2) {
-            if (nasaParagraph[i] && nasaParagraph[i + 1])
-              _nasaParagraph.push(nasaParagraph[i] + nasaParagraph[i + 1]);
+          //delete file
+          fs.unlinkSync(process.env.UPLOAD_FOLDER + req.file.filename);
+        } else {
+          const newParagraph = splitParagraph(newFileData);
+
+          const firstElement = newParagraph.shift();
+          const _newParagraph = [];
+          for (let i = 0; i < newParagraph.length; i += 2) {
+            if (newParagraph[i] && newParagraph[i + 1])
+              _newParagraph.push(newParagraph[i] + newParagraph[i + 1]);
           }
 
-          const comparedData = compareTwoData(_nasaParagraph, mergedData);
-          mergedData = [...comparedData];
+          //old file
+          const oldFileData = fs.readFileSync(
+            process.env.UPLOAD_FOLDER + oldFilename,
+            "UTF-8"
+          );
+          const oldParagraph = splitParagraph(oldFileData);
+          const firstElementOld = oldParagraph.shift();
+          const _oldParagraph = [];
+          for (let i = 0; i < oldParagraph.length; i += 2) {
+            if (oldParagraph[i] && oldParagraph[i + 1])
+              _oldParagraph.push(oldParagraph[i] + oldParagraph[i + 1]);
+          }
+
+          let mergedData = [...new Set([..._oldParagraph, ..._newParagraph])];
+
+          //nasa file
+          const day = getDayOfYear();
+          const nasaFileName = `brdc${day.padStart(3, "0")}0.${new Date()
+            .getUTCFullYear()
+            .toString()
+            .slice(-2)}n`;
+
+          if (fs.existsSync(path.join(process.env.NASA_FOLDER, nasaFileName))) {
+            const nasaFileData = fs.readFileSync(
+              process.env.NASA_FOLDER + nasaFileName,
+              "UTF-8"
+            );
+
+            const nasaParagraph = splitParagraph(nasaFileData);
+            nasaParagraph.shift();
+            const _nasaParagraph = [];
+            for (let i = 0; i < nasaParagraph.length; i += 2) {
+              if (nasaParagraph[i] && nasaParagraph[i + 1])
+                _nasaParagraph.push(nasaParagraph[i] + nasaParagraph[i + 1]);
+            }
+
+            const comparedData = compareTwoData(_nasaParagraph, mergedData);
+            mergedData = [...comparedData];
+          }
+
+          // add header
+          if (firstElement.includes("HEADER")) mergedData.unshift(firstElement);
+
+          // append data to old file
+          fs.writeFileSync(
+            process.env.UPLOAD_FOLDER + oldFilename,
+            mergedData.join("")
+          );
+
+          //delete file
+          fs.unlinkSync(process.env.UPLOAD_FOLDER + req.file.filename);
         }
-
-        // add header
-        if (firstElement.includes("HEADER")) mergedData.unshift(firstElement);
-
-        // append data to old file
-        fs.writeFileSync(
-          process.env.UPLOAD_FOLDER + oldFilename,
-          mergedData.join("")
-        );
-
-        //delete file
-        fs.unlinkSync(process.env.UPLOAD_FOLDER + req.file.filename);
       }
 
       return res.send({
