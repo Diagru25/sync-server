@@ -13,6 +13,10 @@ const watchDir = process.env.WATCH_FOLDER;
 
 const uploadFileToServer = async (filePath) => {
   try {
+    const fileName = path.basename(filePath);
+    const dayOfYear = fileName.substring(4, 7);
+    const year = path.extname(filePath).substring(1, 3);
+
     const file = fs.readFileSync(filePath);
     const form = new FormData();
 
@@ -24,10 +28,11 @@ const uploadFileToServer = async (filePath) => {
     }
 
     const day = getDayOfYear();
-    let filename = `${day.padStart(3, "0")}0.${new Date()
-      .getUTCFullYear()
-      .toString()
-      .slice(-2)}n`;
+    const shortYear = new Date().getUTCFullYear().toString().slice(-2);
+
+    if (dayOfYear !== day.padStart(3, "0") || year !== shortYear) return false;
+
+    let filename = `${day.padStart(3, "0")}0.${shortYear}n`;
     filename = typeRinex ? `${typeRinex}brdc${filename}` : filename;
 
     form.append("file", file, filename);
@@ -49,7 +54,6 @@ class Watcher extends events.EventEmitter {
 
   async uploadFile(filePath) {
     try {
-      console.log("file path: ", filePath);
       const ext = path.extname(filePath);
       if (ext.toLowerCase().match(REGEX_EXT)) {
         const result = await uploadFileToServer(filePath);

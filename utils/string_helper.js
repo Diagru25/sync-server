@@ -82,10 +82,7 @@ export const checkTypeRinex = (filePath) => {
   try {
     const file = fs.readFileSync(filePath, "utf-8");
 
-    //console.log(file);
     const firstLine = file.split(/\r?\n/)[0];
-
-    console.log(file.split(/\r?\n/));
 
     if (
       firstLine.includes("C:") ||
