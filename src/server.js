@@ -6,6 +6,10 @@ import cors from "cors";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
+import sqlite3 from "sqlite3";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import { verifyToken } from "./middleware.js";
 import {
   appendAgentFile,
   readFileLineByLine,
@@ -13,6 +17,44 @@ import {
   getDayOfYear,
   compareTwoData,
 } from "../utils/string_helper.js";
+
+//Connect sqlite db
+const DB_SOURCE = "db.sqlite";
+const db = new sqlite3.Database(DB_SOURCE, (err) => {
+  if (err) {
+    // Cannot open database
+    console.error(err.message);
+    throw err;
+  } else {
+    db.run(
+      `CREATE TABLE Users (
+            Id INTEGER PRIMARY KEY AUTOINCREMENT,
+            Username text,  
+            Password text,             
+            Salt text,    
+            Token text,
+            DateLoggedIn DATE,
+            DateCreated DATE
+            )`,
+      (err) => {
+        if (err) {
+          // Table already created
+        } else {
+          const salt = bcrypt.genSaltSync(10);
+          var insert =
+            "INSERT INTO Users (Username, Password, Salt, DateCreated) VALUES (?,?,?,?)";
+          db.run(
+            insert,
+            ["admin", bcrypt.hashSync("admin", salt), salt, Date("now")],
+            (err) => {
+              console.log(err);
+            }
+          );
+        }
+      }
+    );
+  }
+});
 
 dotenv.config();
 const app = express();
@@ -73,6 +115,57 @@ var upload = multer({
 
 app.use(express.static(__dirname + `/${uploadFolderName}/`));
 
+//apis
+app.post("/auth/login", async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    if (!(username && password)) {
+      res.status(400).send("All input is required");
+    }
+
+    let user = null;
+
+    const sql = `SELECT * FROM Users WHERE Username = "${username}"`;
+    db.all(sql, function (err, rows) {
+      if (err) {
+        res.status(400).json({ error: err.message });
+        return;
+      }
+
+      if (rows.length > 0) user = rows[0];
+      else return res.status(400).send("Tài khoản không tồn tại");
+
+      const PHash = bcrypt.hashSync(password, user.Salt);
+
+      if (PHash === user.Password) {
+        // * CREATE JWT TOKEN
+        const token = jwt.sign(
+          { user_id: user.Id, username: user.Username },
+          process.env.TOKEN_KEY,
+          {
+            expiresIn: "1h", // 60s = 60 seconds - (60m = 60 minutes, 2h = 2 hours, 2d = 2 days)
+          }
+        );
+
+        user.Token = token;
+      } else {
+        return res.status(400).send("Mật khẩu không chính xác");
+      }
+
+      return res.status(200).json({ token: user.Token, user });
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).send({
+      message: "Lỗi không xác định",
+    });
+  }
+});
+
+app.get("/auth/check_session", verifyToken, (req, res) => {
+  res.status(200).send(true);
+});
+
 app.get("/api/agents", (req, res) => {
   try {
     const lines = readFileLineByLine("./assets/agents.txt");
@@ -110,7 +203,7 @@ app.get("/api/agents", (req, res) => {
     });
   } catch (error) {
     console.log("/api/agents: ", error);
-    return res.send({
+    return res.status(500).send({
       message: "Lỗi không xác định",
     });
   }
