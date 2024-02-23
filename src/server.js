@@ -140,7 +140,7 @@ app.post("/auth/login", async (req, res) => {
       if (PHash === user.Password) {
         // * CREATE JWT TOKEN
         const token = jwt.sign(
-          { user_id: user.Id, username: user.Username },
+          { UserId: user.Id, Username: user.Username },
           process.env.TOKEN_KEY,
           {
             expiresIn: "1h", // 60s = 60 seconds - (60m = 60 minutes, 2h = 2 hours, 2d = 2 days)
@@ -163,7 +163,7 @@ app.post("/auth/login", async (req, res) => {
 });
 
 app.get("/auth/check_session", verifyToken, (req, res) => {
-  res.status(200).send(true);
+  res.send({ ...req.user });
 });
 
 app.get("/api/agents", (req, res) => {
@@ -240,13 +240,47 @@ app.post("/api/agents/status", (req, res) => {
 
 app.get("/api/files", (req, res) => {
   try {
+    const query = req.query;
     const files = fs.readdirSync(__dirname + "/" + uploadFolderName);
+
+    let data = [];
+
+    switch (query.type) {
+      case "GPS":
+        data = files
+          .filter((item) => item.includes("GPS"))
+          .map((item) => ({
+            filename: item,
+            filePath: `http://${req.headers.host}/api/download/${item}`,
+          }));
+        break;
+      case "BEIDOU":
+        data = files
+          .filter((item) => item.includes("BDS"))
+          .map((item) => ({
+            filename: item,
+            filePath: `http://${req.headers.host}/api/download/${item}`,
+          }));
+        break;
+      case "GLONASS":
+        data = files
+          .filter((item) => item.includes("GLONASS"))
+          .map((item) => ({
+            filename: item,
+            filePath: `http://${req.headers.host}/api/download/${item}`,
+          }));
+        break;
+      default:
+        data = files.map(
+          (item) => `http://${req.headers.host}/api/download/${item}`
+        );
+        break;
+      // code block
+    }
 
     return res.send({
       success: true,
-      data: files.map(
-        (item) => `http://${req.headers.host}/api/download/${item}`
-      ),
+      data,
     });
   } catch (error) {
     console.log(error);
