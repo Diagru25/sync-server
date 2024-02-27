@@ -23,6 +23,7 @@ const sendStatusAgent = async () => {
           name: computerName,
           username: username,
           publicUrl: public_url,
+          agentId: process.env.AGENT_ID,
         });
         return;
       } else {

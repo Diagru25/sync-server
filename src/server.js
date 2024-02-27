@@ -26,6 +26,7 @@ const db = new sqlite3.Database(DB_SOURCE, (err) => {
     console.error(err.message);
     throw err;
   } else {
+    //create users table
     db.run(
       `CREATE TABLE Users (
             Id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -50,6 +51,28 @@ const db = new sqlite3.Database(DB_SOURCE, (err) => {
               console.log(err);
             }
           );
+        }
+      }
+    );
+
+    // create agents table
+    db.run(
+      `CREATE TABLE Agents (
+            Id INTEGER PRIMARY KEY AUTOINCREMENT,
+            agentId text,  
+            name text,             
+            username text,
+            IP text,    
+            publicUrl text,
+            sshCommand text,
+            note text,
+            updatedAt DATE
+            )`,
+      (err) => {
+        if (err) {
+          // console.log(err);
+          // Table already created
+        } else {
         }
       }
     );
@@ -166,40 +189,22 @@ app.get("/auth/check_session", verifyToken, (req, res) => {
   res.send({ ...req.user });
 });
 
-app.get("/api/agents", (req, res) => {
+app.get("/api/agents", verifyToken, (req, res) => {
   try {
-    const lines = readFileLineByLine("./assets/agents.txt");
-    const data = lines.map((line) => {
-      const paths = line.split(" ");
-      if (paths.length !== 5) return {};
-
-      const d = new Date(Number(paths[4]));
-      const localUpdatedAt = `${d.getDate()}/${
-        d.getMonth() + 1
-      }/${d.getFullYear()}, ${d.getHours()}:${d.getMinutes()}:${d.getSeconds()}`;
-
-      const url = paths[3].split(["://"])[1];
-      const ngrokArr = url.split(":");
-      const sshCommand = `ssh ${paths[1] || "username"}@${ngrokArr[0]} -p ${
-        ngrokArr[1]
-      }`;
-
-      const obj = {
-        name: paths[0],
-        username: paths[1],
-        IP: paths[2],
-        publicUrl: paths[3],
-        updatedAt: d.toISOString(),
-        localUpdatedAt,
-        sshCommand,
-      };
-
-      return obj;
-    });
-
-    return res.send({
-      success: true,
-      data: [...data],
+    const sql = `SELECT * FROM Agents`;
+    db.all(sql, (err, result) => {
+      if (err) {
+        res.status(400).json({
+          success: false,
+          message: "Error on database",
+        });
+      } else {
+        res.status(200).json({
+          success: true,
+          message: "Lấy danh sách trạm thu thành công",
+          data: result,
+        });
+      }
     });
   } catch (error) {
     console.log("/api/agents: ", error);
@@ -209,29 +214,135 @@ app.get("/api/agents", (req, res) => {
   }
 });
 
-app.post("/api/agents/status", (req, res) => {
+app.post("/api/agents/status", async (req, res) => {
   try {
     const data = req.body;
     const agentIp = req.socket.remoteAddress;
-    const updatedAt = new Date();
-    const lineData = `${data.name || "Unknown-Computer"} ${
-      data.username
-    } ${agentIp} ${data.publicUrl} ${updatedAt.getTime()}`;
 
-    const isAppend = appendAgentFile("./assets/agents.txt", agentIp, lineData);
+    let sql = `SELECT * FROM Agents WHERE agentId = "${data.agentId}"`;
+    await db.all(sql, (err, result) => {
+      if (err) {
+        console.log(err);
+        res.status(402).json({ success: false, message: "Error on database" });
+        return;
+      }
 
-    if (isAppend)
-      return res.send({
-        success: true,
-      });
-    else
-      return res.send({
-        success: false,
-        message: "Không ghi được vào file.",
-      });
+      if (result.length === 0) {
+        const url = data.publicUrl.split(["://"])[1];
+        const ngrokArr = url.split(":");
+        const sshCommand = `ssh ${data.username || "username"}@${
+          ngrokArr[0]
+        } -p ${ngrokArr[1]}`;
+
+        let sql =
+          "INSERT INTO Agents (agentId, name, username, IP, publicUrl, sshCommand, note, updatedAt) VALUES (?,?,?,?,?,?,?,?)";
+        const params = [
+          data.agentId,
+          data.name,
+          data.username,
+          agentIp,
+          data.publicUrl,
+          sshCommand,
+          "",
+          Date("now"),
+        ];
+        const agent = db.run(sql, params, function (err, innerResult) {
+          if (err) {
+            res
+              .status(400)
+              .json({ success: false, message: "Create Failure on database" });
+            return;
+          } else {
+            return res.status(201).json({
+              success: true,
+              message: "Tạo mới thành công",
+              data: agent,
+            });
+          }
+        });
+      } else {
+        let sql = `UPDATE Agents SET note = "${data.note}" WHERE agentId = "${data.agentId}"`;
+
+        db.run(sql, function (err, innerResult) {
+          if (err) {
+            res
+              .status(400)
+              .json({ success: false, message: "Update Failure on database" });
+            return;
+          } else {
+            return res.status(200).json({
+              success: true,
+              message: "Cập nhật thành công",
+              data: {},
+            });
+          }
+        });
+      }
+    });
   } catch (error) {
     console.log(error);
-    return res.send({
+    return res.status(500).send({
+      success: false,
+      message: "Lỗi không xác định.",
+    });
+  }
+});
+
+app.put("/api/agents/status", async (req, res) => {
+  try {
+    const data = req.body;
+    const agentIp = req.socket.remoteAddress;
+
+    let sql = `SELECT * FROM Agents WHERE agentId = "${data.agentId}"`;
+    await db.all(sql, (err, result) => {
+      if (err) {
+        console.log(err);
+        res.status(402).json({ success: false, message: "Error on database " });
+        return;
+      }
+
+      if (result.length === 0) {
+        const url = data.publicUrl.split(["://"])[1];
+        const ngrokArr = url.split(":");
+        const sshCommand = `ssh ${data.username || "username"}@${
+          ngrokArr[0]
+        } -p ${ngrokArr[1]}`;
+
+        let sql =
+          "INSERT INTO Agents (agentId, name, username, IP, publicUrl, sshCommand, note, updatedAt) VALUES (?,?,?,?,?, ?, ?, ?)";
+        const params = [
+          data.agentId,
+          data.name,
+          data.username,
+          agentIp,
+          data.publicUrl,
+          sshCommand,
+          "",
+          Date("now"),
+        ];
+        const agent = db.run(sql, params, function (err, innerResult) {
+          if (err) {
+            res
+              .status(400)
+              .json({ success: false, message: "Error on database" });
+            return;
+          } else {
+            return res.status(201).json({
+              success: true,
+              data: agent,
+            });
+          }
+        });
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: "Agent exists",
+        });
+      }
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).send({
       success: false,
       message: "Lỗi không xác định.",
     });
