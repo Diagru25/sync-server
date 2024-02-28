@@ -218,6 +218,11 @@ app.post("/api/agents/status", async (req, res) => {
   try {
     const data = req.body;
     const agentIp = req.socket.remoteAddress;
+    const url = data.publicUrl.split(["://"])[1];
+    const ngrokArr = url.split(":");
+    const sshCommand = `ssh ${data.username || "username"}@${ngrokArr[0]} -p ${
+      ngrokArr[1]
+    }`;
 
     let sql = `SELECT * FROM Agents WHERE agentId = "${data.agentId}"`;
     await db.all(sql, (err, result) => {
@@ -228,12 +233,6 @@ app.post("/api/agents/status", async (req, res) => {
       }
 
       if (result.length === 0) {
-        const url = data.publicUrl.split(["://"])[1];
-        const ngrokArr = url.split(":");
-        const sshCommand = `ssh ${data.username || "username"}@${
-          ngrokArr[0]
-        } -p ${ngrokArr[1]}`;
-
         let sql =
           "INSERT INTO Agents (agentId, name, username, IP, publicUrl, sshCommand, note, updatedAt) VALUES (?,?,?,?,?,?,?,?)";
         const params = [
@@ -261,12 +260,28 @@ app.post("/api/agents/status", async (req, res) => {
           }
         });
       } else {
+        //update note from webs
         let sql = `UPDATE Agents SET note = "${
           data.note || ""
         }" WHERE agentId = "${data.agentId}"`;
 
+        if (data.isFromAgent)
+          //update all and don't update note
+          sql = `UPDATE Agents 
+                  SET note = "${data.note || ""}",
+                      agentId = "${data.agentId}",
+                      name = "${data.name}",
+                      username = "${data.username}",
+                      IP = "${agentIp}",
+                      publicUrl = "${data.publicUrl}",
+                      sshCommand = "${sshCommand}",
+                      updatedAt = "${Date("now")}" WHERE agentId = "${
+            data.agentId
+          }"`;
+
         db.run(sql, function (err, innerResult) {
           if (err) {
+            console.log(err);
             res
               .status(400)
               .json({ success: false, message: "Update Failure on database" });

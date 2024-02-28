@@ -24,6 +24,7 @@ const sendStatusAgent = async () => {
           username: username,
           publicUrl: public_url,
           agentId: process.env.AGENT_ID,
+          isFromAgent: true,
         });
         return;
       } else {
