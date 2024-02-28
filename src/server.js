@@ -261,7 +261,9 @@ app.post("/api/agents/status", async (req, res) => {
           }
         });
       } else {
-        let sql = `UPDATE Agents SET note = "${data.note}" WHERE agentId = "${data.agentId}"`;
+        let sql = `UPDATE Agents SET note = "${
+          data.note || ""
+        }" WHERE agentId = "${data.agentId}"`;
 
         db.run(sql, function (err, innerResult) {
           if (err) {
