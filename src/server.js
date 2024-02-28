@@ -268,8 +268,7 @@ app.post("/api/agents/status", async (req, res) => {
         if (data.isFromAgent)
           //update all and don't update note
           sql = `UPDATE Agents 
-                  SET note = "${data.note || ""}",
-                      agentId = "${data.agentId}",
+                  SET agentId = "${data.agentId}",
                       name = "${data.name}",
                       username = "${data.username}",
                       IP = "${agentIp}",
