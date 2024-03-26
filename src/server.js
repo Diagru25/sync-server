@@ -378,7 +378,7 @@ app.get("/api/files", (req, res) => {
           .filter((item) => item.includes("GPS"))
           .map((item) => ({
             filename: item,
-            filePath: `http://${req.headers.host}/api/download/${item}`,
+            filePath: `https://${req.headers.host}/be/api/download/${item}`,
           }));
         break;
       case "BEIDOU":
@@ -386,7 +386,7 @@ app.get("/api/files", (req, res) => {
           .filter((item) => item.includes("BDS"))
           .map((item) => ({
             filename: item,
-            filePath: `http://${req.headers.host}/api/download/${item}`,
+            filePath: `https://${req.headers.host}/be/api/download/${item}`,
           }));
         break;
       case "GLONASS":
@@ -394,7 +394,7 @@ app.get("/api/files", (req, res) => {
           .filter((item) => item.includes("GLONASS"))
           .map((item) => ({
             filename: item,
-            filePath: `http://${req.headers.host}/api/download/${item}`,
+            filePath: `https://${req.headers.host}/be/api/download/${item}`,
           }));
         break;
       default:
