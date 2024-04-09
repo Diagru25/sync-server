@@ -38,7 +38,7 @@ const sendStatusAgent = async () => {
   }
 };
 
-const task = cron.schedule("*/10 * * * * *", () => {
+const task = cron.schedule("*/30 * * * * *", () => {
   sendStatusAgent();
 });
 
