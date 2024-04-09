@@ -97,18 +97,21 @@ var storage = multer.diskStorage({
     return cb(null, uploadFolderName);
   },
   filename: function (req, file, cb) {
-    const prefixFileName = file.originalname.split("brdc");
+    // const prefixFileName = file.originalname.split("brdc");
 
-    const day = getDayOfYear();
-    const tempFileName = `${day.padStart(3, "0")}0.${new Date()
-      .getUTCFullYear()
-      .toString()
-      .slice(-2)}n`;
+    // const day = getDayOfYear();
+    // const tempFileName = `${day.padStart(3, "0")}0.${new Date()
+    //   .getUTCFullYear()
+    //   .toString()
+    //   .slice(-2)}n`;
 
-    const filename = prefixFileName[0]
-      ? `${prefixFileName[0]}brdc${tempFileName}`
-      : tempFileName;
+    // const filename = prefixFileName[0]
+    //   ? `${prefixFileName[0]}brdc${tempFileName}`
+    //   : tempFileName;
 
+    const filename = file.originalname;
+
+    // nếu đã tồn tại file của ngày đó thì tạo filename mới để xử lý về sau
     if (fs.existsSync(path.join(uploadFolderName, filename))) {
       const newFileName = Date.now().valueOf() + "_" + filename;
       return cb(null, newFileName);
@@ -515,12 +518,14 @@ app.post("/api/upload", upload.single("file"), (req, res) => {
 
           let mergedData = [...new Set([..._oldParagraph, ..._newParagraph])];
 
+          //const day = getDayOfYear();
+          // const nasaFileName = `brdc${day.padStart(3, "0")}0.${new Date()
+          //   .getUTCFullYear()
+          //   .toString()
+          //   .slice(-2)}n`;
+
           //nasa file
-          const day = getDayOfYear();
-          const nasaFileName = `brdc${day.padStart(3, "0")}0.${new Date()
-            .getUTCFullYear()
-            .toString()
-            .slice(-2)}n`;
+          const nasaFileName = req.file.filename.slice(-12);
 
           if (fs.existsSync(path.join(process.env.NASA_FOLDER, nasaFileName))) {
             const nasaFileData = fs.readFileSync(
