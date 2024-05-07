@@ -36,6 +36,7 @@ const uploadFileToServer = async (filePath) => {
     filename = typeRinex ? `${typeRinex}brdc${filename}` : filename;
 
     form.append("file", file, filename);
+
     const res = await axios.post(`${process.env.SERVER_URL}/api/upload`, form);
     return res.data;
     //console.log(typeRinex, filename);

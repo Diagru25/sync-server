@@ -16,6 +16,8 @@ import {
   splitParagraph,
   getDayOfYear,
   compareTwoData,
+  sortGpsData,
+  combineMultipleBrdc,
 } from "../utils/string_helper.js";
 
 //Connect sqlite db
@@ -400,6 +402,14 @@ app.get("/api/files", (req, res) => {
             filePath: `https://${req.headers.host}/be/api/download/${item}`,
           }));
         break;
+      case "ALL":
+        data = files
+          .filter((item) => item.includes("ALL"))
+          .map((item) => ({
+            filename: item,
+            filePath: `https://${req.headers.host}/be/api/download/${item}`,
+          }));
+        break;
       default:
         data = files.map(
           (item) => `http://${req.headers.host}/api/download/${item}`
@@ -479,57 +489,45 @@ app.post("/api/upload", upload.single("file"), (req, res) => {
       ) {
         //new file
         const newFileData = fs.readFileSync(
-          process.env.UPLOAD_FOLDER + newFilename,
+          uploadFolderName + newFilename,
           "UTF-8"
         );
 
-        //Nếu là file BEIDOU thì lưu luôn
+        const newParagraph = splitParagraph(newFileData);
+
+        const firstElement = newParagraph.shift();
+        const _newParagraph = [];
+        for (let i = 0; i < newParagraph.length; i += 2) {
+          if (newParagraph[i] && newParagraph[i + 1])
+            _newParagraph.push(newParagraph[i] + newParagraph[i + 1]);
+        }
+
+        //old file
+        const oldFileData = fs.readFileSync(
+          uploadFolderName + oldFilename,
+          "UTF-8"
+        );
+        const oldParagraph = splitParagraph(oldFileData);
+        const firstElementOld = oldParagraph.shift();
+        const _oldParagraph = [];
+        for (let i = 0; i < oldParagraph.length; i += 2) {
+          if (oldParagraph[i] && oldParagraph[i + 1])
+            _oldParagraph.push(oldParagraph[i] + oldParagraph[i + 1]);
+        }
+
+        let mergedData = [...new Set([..._oldParagraph, ..._newParagraph])];
+
+        const brdcFileName = req.file.filename.slice(-12);
+
+        //Nếu là file BEIDOU
         if (newFilename.includes("BDS") || oldFilename.includes("BDS")) {
-          // append data to old file
-          fs.writeFileSync(
-            process.env.UPLOAD_FOLDER + oldFilename,
-            newFileData
-          );
-
-          //delete file
-          fs.unlinkSync(process.env.UPLOAD_FOLDER + req.file.filename);
+          const sortedData = sortGpsData(mergedData);
+          mergedData = [...sortedData];
         } else {
-          const newParagraph = splitParagraph(newFileData);
-
-          const firstElement = newParagraph.shift();
-          const _newParagraph = [];
-          for (let i = 0; i < newParagraph.length; i += 2) {
-            if (newParagraph[i] && newParagraph[i + 1])
-              _newParagraph.push(newParagraph[i] + newParagraph[i + 1]);
-          }
-
-          //old file
-          const oldFileData = fs.readFileSync(
-            process.env.UPLOAD_FOLDER + oldFilename,
-            "UTF-8"
-          );
-          const oldParagraph = splitParagraph(oldFileData);
-          const firstElementOld = oldParagraph.shift();
-          const _oldParagraph = [];
-          for (let i = 0; i < oldParagraph.length; i += 2) {
-            if (oldParagraph[i] && oldParagraph[i + 1])
-              _oldParagraph.push(oldParagraph[i] + oldParagraph[i + 1]);
-          }
-
-          let mergedData = [...new Set([..._oldParagraph, ..._newParagraph])];
-
-          //const day = getDayOfYear();
-          // const nasaFileName = `brdc${day.padStart(3, "0")}0.${new Date()
-          //   .getUTCFullYear()
-          //   .toString()
-          //   .slice(-2)}n`;
-
           //nasa file
-          const nasaFileName = req.file.filename.slice(-12);
-
-          if (fs.existsSync(path.join(process.env.NASA_FOLDER, nasaFileName))) {
+          if (fs.existsSync(path.join(process.env.NASA_FOLDER, brdcFileName))) {
             const nasaFileData = fs.readFileSync(
-              process.env.NASA_FOLDER + nasaFileName,
+              process.env.NASA_FOLDER + brdcFileName,
               "UTF-8"
             );
 
@@ -544,19 +542,33 @@ app.post("/api/upload", upload.single("file"), (req, res) => {
             const comparedData = compareTwoData(_nasaParagraph, mergedData);
             mergedData = [...comparedData];
           }
-
-          // add header
-          if (firstElement.includes("HEADER")) mergedData.unshift(firstElement);
-
-          // append data to old file
-          fs.writeFileSync(
-            process.env.UPLOAD_FOLDER + oldFilename,
-            mergedData.join("")
-          );
-
-          //delete file
-          fs.unlinkSync(process.env.UPLOAD_FOLDER + req.file.filename);
         }
+
+        // add header
+        if (firstElement.includes("HEADER")) mergedData.unshift(firstElement);
+
+        // append data to old file
+        fs.writeFileSync(uploadFolderName + oldFilename, mergedData.join(""));
+
+        //delete file
+        fs.unlinkSync(uploadFolderName + req.file.filename);
+
+        // tao ra file tong hop cua tat ca cac loai ve tinh
+        const combineData = combineMultipleBrdc([
+          {
+            prefix: "GPS",
+            filename: brdcFileName,
+          },
+          {
+            prefix: "BDS",
+            filename: brdcFileName,
+          },
+        ]);
+        if (combineData)
+          fs.writeFileSync(
+            `${uploadFolderName}ALL${brdcFileName}`,
+            combineData
+          );
       }
 
       return res.send({

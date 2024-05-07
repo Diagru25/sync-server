@@ -1,4 +1,5 @@
 import fs from "fs";
+import path from "path";
 import { REGEX_SPLIT } from "./constant.js";
 
 export const splitParagraph = (s) => {
@@ -145,4 +146,32 @@ export const compareTwoData = (nasaData, ownData) => {
   const sortedArr = sortGpsData(allArr);
 
   return sortedArr;
+};
+
+export const combineMultipleBrdc = (filePaths) => {
+  let contents = [];
+  try {
+    for (let i = 0; i < filePaths.length; i++) {
+      if (
+        fs.existsSync(
+          path.join(
+            process.env.UPLOAD_FOLDER,
+            `${filePaths[i].prefix}${filePaths[i].filename}`
+          )
+        )
+      ) {
+        const fileData = fs.readFileSync(
+          `${process.env.UPLOAD_FOLDER}${filePaths[i].prefix}${filePaths[i].filename}`,
+          "utf-8"
+        );
+        contents = [
+          ...contents.concat([`START_${filePaths[i].prefix}\n`, fileData]),
+        ];
+      }
+    }
+    return contents.join("");
+  } catch (err) {
+    console.log("combineMultipleBrdc: ", err);
+    return "";
+  }
 };
