@@ -11,10 +11,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { verifyToken } from "./middleware.js";
 import {
-  appendAgentFile,
-  readFileLineByLine,
   splitParagraph,
-  getDayOfYear,
   compareTwoData,
   sortGpsData,
   combineMultipleBrdc,
