@@ -415,6 +415,7 @@ app.get("/api/files", (req, res) => {
       // code block
     }
 
+    data = data.reverse();
     return res.send({
       success: true,
       data,
