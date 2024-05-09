@@ -399,9 +399,9 @@ app.get("/api/files", (req, res) => {
             filePath: `https://${req.headers.host}/be/api/download/${item}`,
           }));
         break;
-      case "ALL":
+      case "MULTIPLE":
         data = files
-          .filter((item) => item.includes("ALL"))
+          .filter((item) => item.includes("MULTIPLE"))
           .map((item) => ({
             filename: item,
             filePath: `https://${req.headers.host}/be/api/download/${item}`,
