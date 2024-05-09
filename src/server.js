@@ -564,7 +564,7 @@ app.post("/api/upload", upload.single("file"), (req, res) => {
         ]);
         if (combineData)
           fs.writeFileSync(
-            `${uploadFolderName}ALL${brdcFileName}`,
+            `${uploadFolderName}MULTIPLE${brdcFileName}`,
             combineData
           );
       }
