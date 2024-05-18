@@ -439,8 +439,8 @@ app.get("/api/nasa_files", (req, res) => {
         (item) => `http://${req.headers.host}/api/download/${item}?type=nasa`
       ),
     });
-  } catch (error) {
-    console.log(error);
+  } catch (err) {
+    console.log("Err - /api/nasa_files:", err);
     return res.send({
       success: false,
       message: "Lỗi không xác định.",
@@ -606,6 +606,45 @@ app.post("/api/upload/multiple", upload.array("files", 5), (req, res) => {
   } catch (error) {
     return res.send({
       success: false,
+    });
+  }
+});
+
+app.get("/api/refactorAllBrdc", (req, res) => {
+  try {
+    const files = fs.readdirSync(__dirname + "/" + uploadFolderName);
+    const _files = files.filter((item) => item.includes("GPS"));
+    for (let i = 0; i < _files.length; i++) {
+      const filename = _files[i];
+      if (filename && fs.existsSync(path.join(uploadFolderName, filename))) {
+        const fileData = fs.readFileSync(uploadFolderName + filename, "UTF-8");
+
+        const paragraph = splitParagraph(fileData);
+
+        const firstElement = paragraph.shift();
+        const _paragraph = [];
+        for (let j = 0; j < paragraph.length; j += 2) {
+          if (paragraph[j] && paragraph[j + 1])
+            _paragraph.push(paragraph[j] + paragraph[j + 1]);
+        }
+
+        let mergedData = compareTwoData([], _paragraph);
+
+        if (firstElement.includes("HEADER")) mergedData.unshift(firstElement);
+
+        // append data to old file
+        fs.writeFileSync(uploadFolderName + filename, mergedData.join(""));
+      }
+    }
+    return res.send({
+      success: true,
+      message: "Chỉnh sửa thành công.",
+    });
+  } catch (err) {
+    console.log("Err - /api/refactorAllBrdc:", err);
+    return res.send({
+      success: false,
+      message: "Lỗi không xác định.",
     });
   }
 });

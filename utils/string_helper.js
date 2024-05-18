@@ -101,48 +101,57 @@ export const checkTypeRinex = (filePath) => {
 };
 
 export const sortGpsData = (arr) => {
-  const sortedArr = arr.sort((a, b) => {
-    const strOneTime = a.match(REGEX_SPLIT)[0];
-    const strTwoTime = b.match(REGEX_SPLIT)[0];
+  try {
+    const sortedArr = arr.sort((a, b) => {
+      const strOneTime = a.match(REGEX_SPLIT)[0];
+      const strTwoTime = b.match(REGEX_SPLIT)[0];
 
-    const oneArr = strOneTime
-      .split(" ")
-      .filter((el) => el)
-      .slice(1);
+      const oneArr = strOneTime
+        .split(" ")
+        .filter((el) => el)
+        .slice(1);
 
-    const twoArr = strTwoTime
-      .split(" ")
-      .filter((el) => el)
-      .slice(1);
+      const twoArr = strTwoTime
+        .split(" ")
+        .filter((el) => el)
+        .slice(1);
 
-    let rt = 1;
+      const timeStampOne = new Date(
+        Number(`20${oneArr[0]}`),
+        Number(oneArr[1]) - 1,
+        Number(oneArr[2]),
+        Number(oneArr[3]),
+        Number(oneArr[4]),
+        0
+      ).getTime();
 
-    for (let i = 0; i < oneArr.length; i++) {
-      if (oneArr[i] === twoArr[i]) continue;
+      const timeStampTwo = new Date(
+        Number(`20${twoArr[0]}`),
+        Number(twoArr[1]) - 1,
+        Number(twoArr[2]),
+        Number(twoArr[3]),
+        Number(twoArr[4]),
+        0
+      ).getTime();
+      return timeStampOne - timeStampTwo;
+    });
 
-      if (Number(oneArr[i]) < Number(twoArr[i])) {
-        rt = -1;
-        break;
-      } else {
-        rt = 1;
-      }
-    }
-
-    return rt;
-  });
-
-  return sortedArr;
+    return sortedArr;
+  } catch (err) {
+    console.log("Err - sortGpsData: ", err);
+    return arr;
+  }
 };
 
 export const compareTwoData = (nasaData, ownData) => {
-  const defaultArr = nasaData.filter(
-    (el) =>
-      !ownData.find((ownEl) => {
-        el.split(REGEX_SPLIT)[0] === ownEl.split(REGEX_SPLIT)[0];
-      })
-  );
-  const allArr = defaultArr.concat(ownData);
-
+  // const defaultArr = nasaData.filter(
+  //   (el) =>
+  //     !ownData.find((ownEl) => {
+  //       el.split(REGEX_SPLIT)[0] === ownEl.split(REGEX_SPLIT)[0];
+  //     })
+  // );
+  //const allArr = defaultArr.concat(ownData);
+  const allArr = [...new Set([...nasaData, ...ownData])];
   const sortedArr = sortGpsData(allArr);
 
   return sortedArr;
