@@ -612,8 +612,10 @@ app.post("/api/upload/multiple", upload.array("files", 5), (req, res) => {
 
 app.get("/api/refactorAllBrdc", (req, res) => {
   try {
+    const query = req.query;
+    const type = query.type || "GPS";
     const files = fs.readdirSync(__dirname + "/" + uploadFolderName);
-    const _files = files.filter((item) => item.includes("GPS"));
+    const _files = files.filter((item) => item.includes(type));
     for (let i = 0; i < _files.length; i++) {
       const filename = _files[i];
       if (filename && fs.existsSync(path.join(uploadFolderName, filename))) {
