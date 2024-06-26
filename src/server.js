@@ -542,11 +542,18 @@ app.post("/api/upload", upload.single("file"), (req, res) => {
           }
         }
 
+        //sort
+        let final_mergeData = compareTwoData([], mergedData);
+
         // add header
-        if (firstElement.includes("HEADER")) mergedData.unshift(firstElement);
+        if (firstElement.includes("HEADER"))
+          final_mergeData.unshift(firstElement);
 
         // append data to old file
-        fs.writeFileSync(uploadFolderName + oldFilename, mergedData.join(""));
+        fs.writeFileSync(
+          uploadFolderName + oldFilename,
+          final_mergeData.join("")
+        );
 
         //delete file
         fs.unlinkSync(uploadFolderName + req.file.filename);
