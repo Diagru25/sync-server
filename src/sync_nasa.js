@@ -90,11 +90,15 @@ const syncNasaData = async () => {
 
             const sortedArr = sortGpsData(mergedData);
 
-            if (existHeader.includes("HEADER")) sortedArr.unshift(existHeader);
+            //sort
+            let final_mergeData = compareTwoData([], sortedArr);
+
+            if (existHeader.includes("HEADER"))
+              final_mergeData.unshift(existHeader);
 
             fs.writeFileSync(
               process.env.UPLOAD_FOLDER + gpsCombineFileName,
-              sortedArr.join("")
+              final_mergeData.join("")
             );
           } else {
             fs.writeFileSync(
