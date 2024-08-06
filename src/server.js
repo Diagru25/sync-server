@@ -177,13 +177,71 @@ app.post("/auth/login", async (req, res) => {
         return res.status(400).send("Mật khẩu không chính xác");
       }
 
-      return res.status(200).json({ token: user.Token, user });
+      return res.status(200).json({
+        token: user.Token,
+        user: {
+          ...user,
+          Password: "",
+          Salt: "",
+        },
+      });
     });
   } catch (err) {
     console.log(err);
     return res.status(500).send({
       message: "Lỗi không xác định",
     });
+  }
+});
+
+app.put("/user/update/:id", verifyToken, async (req, res) => {
+  try {
+    const data = req.body;
+    const id = req.params.id;
+
+    let sql = `SELECT * FROM Users WHERE Id = ${id}`;
+    await db.all(sql, (err, result) => {
+      if (err) {
+        console.log(err);
+        res.status(402).json({ success: false, message: "Error on database" });
+        return;
+      }
+
+      if (result.length === 0) {
+        console.log("result if: ", result);
+        return res.status(400).json({
+          success: false,
+          message: "Không tồn tại bản ghi",
+        });
+      } else {
+        console.log(result);
+        const salt = bcrypt.genSaltSync(10);
+        const newPass = bcrypt.hashSync(data.newPassword, salt);
+        //update all and don't update note
+        sql = `UPDATE Users 
+                  SET Salt = "${salt}",
+                  Password = "${newPass}" WHERE Id = ${id}`;
+
+        db.run(sql, function (err, innerResult) {
+          if (err) {
+            console.log(err);
+            res.status(400).json({
+              success: false,
+              message: "Update Failure on database",
+            });
+            return;
+          } else {
+            return res.status(200).json({
+              success: true,
+              message: "Cập nhật thành công",
+              data: {},
+            });
+          }
+        });
+      }
+    });
+  } catch (error) {
+    console.log(error);
   }
 });
 
