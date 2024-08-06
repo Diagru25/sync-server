@@ -208,16 +208,14 @@ app.put("/user/update/:id", verifyToken, async (req, res) => {
       }
 
       if (result.length === 0) {
-        console.log("result if: ", result);
         return res.status(400).json({
           success: false,
           message: "Không tồn tại bản ghi",
         });
       } else {
-        console.log(result);
         const salt = bcrypt.genSaltSync(10);
         const newPass = bcrypt.hashSync(data.newPassword, salt);
-        //update all and don't update note
+        //update pass
         sql = `UPDATE Users 
                   SET Salt = "${salt}",
                   Password = "${newPass}" WHERE Id = ${id}`;
