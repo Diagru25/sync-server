@@ -29,7 +29,6 @@ const uploadFileToServer = async (filePath) => {
 
     const day = getDayOfYear();
     const shortYear = new Date().getUTCFullYear().toString().slice(-2);
-
     if (dayOfYear !== day.padStart(3, "0") || year !== shortYear) return false;
 
     let filename = `${day.padStart(3, "0")}0.${shortYear}n`;

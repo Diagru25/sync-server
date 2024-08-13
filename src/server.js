@@ -14,8 +14,10 @@ import {
   splitParagraph,
   compareTwoData,
   sortGpsData,
+  sortBdsData,
   combineMultipleBrdc,
 } from "../utils/string_helper.js";
+import { FILE_TYPE } from "../utils/constant.js";
 
 //Connect sqlite db
 const DB_SOURCE = "db.sqlite";
@@ -433,7 +435,7 @@ app.get("/api/files", (req, res) => {
     switch (query.type) {
       case "GPS":
         data = files
-          .filter((item) => item.includes("GPS"))
+          .filter((item) => item.includes(FILE_TYPE.GPS))
           .map((item) => ({
             filename: item,
             filePath: `https://${req.headers.host}/be/api/download/${item}`,
@@ -441,7 +443,7 @@ app.get("/api/files", (req, res) => {
         break;
       case "BEIDOU":
         data = files
-          .filter((item) => item.includes("BDS"))
+          .filter((item) => item.includes(FILE_TYPE.BEIDOU))
           .map((item) => ({
             filename: item,
             filePath: `https://${req.headers.host}/be/api/download/${item}`,
@@ -449,7 +451,7 @@ app.get("/api/files", (req, res) => {
         break;
       case "GLONASS":
         data = files
-          .filter((item) => item.includes("GLONASS"))
+          .filter((item) => item.includes(FILE_TYPE.GLONASS))
           .map((item) => ({
             filename: item,
             filePath: `https://${req.headers.host}/be/api/download/${item}`,
@@ -457,7 +459,7 @@ app.get("/api/files", (req, res) => {
         break;
       case "MULTIPLE":
         data = files
-          .filter((item) => item.includes("MULTIPLE"))
+          .filter((item) => item.includes(FILE_TYPE.MULTIPLE))
           .map((item) => ({
             filename: item,
             filePath: `https://${req.headers.host}/be/api/download/${item}`,
@@ -541,13 +543,19 @@ app.post("/api/upload", upload.single("file"), (req, res) => {
         oldFilename &&
         fs.existsSync(path.join(uploadFolderName, oldFilename))
       ) {
+        const isBDS =
+          newFilename.includes(FILE_TYPE.BEIDOU) ||
+          oldFilename.includes(FILE_TYPE.BEIDOU);
+
         //new file
         const newFileData = fs.readFileSync(
           uploadFolderName + newFilename,
           "UTF-8"
         );
 
-        const newParagraph = splitParagraph(newFileData);
+        const fileType = isBDS ? FILE_TYPE.BEIDOU : FILE_TYPE.GPS;
+
+        const newParagraph = splitParagraph(newFileData, fileType);
 
         const firstElement = newParagraph.shift();
         const _newParagraph = [];
@@ -561,7 +569,8 @@ app.post("/api/upload", upload.single("file"), (req, res) => {
           uploadFolderName + oldFilename,
           "UTF-8"
         );
-        const oldParagraph = splitParagraph(oldFileData);
+        const oldParagraph = splitParagraph(oldFileData, fileType);
+
         const firstElementOld = oldParagraph.shift();
         const _oldParagraph = [];
         for (let i = 0; i < oldParagraph.length; i += 2) {
@@ -574,8 +583,8 @@ app.post("/api/upload", upload.single("file"), (req, res) => {
         const brdcFileName = req.file.filename.slice(-12);
 
         //Nếu là file BEIDOU
-        if (newFilename.includes("BDS") || oldFilename.includes("BDS")) {
-          const sortedData = sortGpsData(mergedData);
+        if (isBDS) {
+          const sortedData = sortBdsData(mergedData);
           mergedData = [...sortedData];
         } else {
           //nasa file
@@ -593,13 +602,17 @@ app.post("/api/upload", upload.single("file"), (req, res) => {
                 _nasaParagraph.push(nasaParagraph[i] + nasaParagraph[i + 1]);
             }
 
-            const comparedData = compareTwoData(_nasaParagraph, mergedData);
+            const comparedData = compareTwoData(
+              _nasaParagraph,
+              mergedData,
+              fileType
+            );
             mergedData = [...comparedData];
           }
         }
 
         //sort
-        let final_mergeData = compareTwoData([], mergedData);
+        let final_mergeData = compareTwoData([], mergedData, fileType);
 
         // add header
         if (firstElement.includes("HEADER"))
@@ -617,11 +630,11 @@ app.post("/api/upload", upload.single("file"), (req, res) => {
         // tao ra file tong hop cua tat ca cac loai ve tinh
         const combineData = combineMultipleBrdc([
           {
-            prefix: "GPS",
+            prefix: FILE_TYPE.GPS,
             filename: brdcFileName,
           },
           {
-            prefix: "BDS",
+            prefix: FILE_TYPE.BEIDOU,
             filename: brdcFileName,
           },
         ]);
@@ -676,9 +689,9 @@ app.post("/api/upload/multiple", upload.array("files", 5), (req, res) => {
 app.get("/api/refactorAllBrdc", (req, res) => {
   try {
     const query = req.query;
-    const type = query.type || "GPS";
+    const fileType = query.type || FILE_TYPE.GPS;
     const files = fs.readdirSync(__dirname + "/" + uploadFolderName);
-    const _files = files.filter((item) => item.includes(type));
+    const _files = files.filter((item) => item.includes(fileType));
     for (let i = 0; i < _files.length; i++) {
       const filename = _files[i];
       if (filename && fs.existsSync(path.join(uploadFolderName, filename))) {
@@ -693,7 +706,7 @@ app.get("/api/refactorAllBrdc", (req, res) => {
             _paragraph.push(paragraph[j] + paragraph[j + 1]);
         }
 
-        let mergedData = compareTwoData([], _paragraph);
+        let mergedData = compareTwoData([], _paragraph, fileType);
 
         if (firstElement.includes("HEADER")) mergedData.unshift(firstElement);
 

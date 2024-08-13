@@ -1,11 +1,17 @@
 import fs from "fs";
 import path from "path";
-import { REGEX_SPLIT } from "./constant.js";
+import { FILE_TYPE, REGEX_SPLIT, REGEX_SPLIT_BDS } from "./constant.js";
 
-export const splitParagraph = (s) => {
+export const splitParagraph = (s, type = FILE_TYPE.GPS) => {
   if (!s) return [];
   let res = [];
-  res = s.split(REGEX_SPLIT);
+  let regex = REGEX_SPLIT;
+
+  if (type === FILE_TYPE.BEIDOU) {
+    regex = REGEX_SPLIT_BDS;
+  }
+
+  res = s.split(regex);
 
   return res;
 };
@@ -90,9 +96,10 @@ export const checkTypeRinex = (filePath) => {
       firstLine.includes("BeiDou") ||
       firstLine.includes("BDS")
     )
-      return "BDS";
+      return FILE_TYPE.BEIDOU;
 
-    if (firstLine.includes("G:") || firstLine.includes("GPS")) return "GPS";
+    if (firstLine.includes("G:") || firstLine.includes("GPS"))
+      return FILE_TYPE.GPS;
 
     return "";
   } catch (error) {
@@ -143,18 +150,60 @@ export const sortGpsData = (arr) => {
   }
 };
 
-export const compareTwoData = (nasaData, ownData) => {
-  // const defaultArr = nasaData.filter(
-  //   (el) =>
-  //     !ownData.find((ownEl) => {
-  //       el.split(REGEX_SPLIT)[0] === ownEl.split(REGEX_SPLIT)[0];
-  //     })
-  // );
-  //const allArr = defaultArr.concat(ownData);
-  const allArr = [...new Set([...nasaData, ...ownData])];
-  const sortedArr = sortGpsData(allArr);
+export const sortBdsData = (arr) => {
+  try {
+    const sortedArr = arr.sort((a, b) => {
+      const strOneTime = a.match(REGEX_SPLIT_BDS)[0];
+      const strTwoTime = b.match(REGEX_SPLIT_BDS)[0];
 
-  return sortedArr;
+      const oneArr = strOneTime
+        .split(" ")
+        .filter((el) => el)
+        .slice(1);
+
+      const twoArr = strTwoTime
+        .split(" ")
+        .filter((el) => el)
+        .slice(1);
+
+      const timeStampOne = new Date(
+        Number(oneArr[0]),
+        Number(oneArr[1]) - 1,
+        Number(oneArr[2]),
+        Number(oneArr[3]),
+        Number(oneArr[4]),
+        0
+      ).getTime();
+
+      const timeStampTwo = new Date(
+        Number(twoArr[0]),
+        Number(twoArr[1]) - 1,
+        Number(twoArr[2]),
+        Number(twoArr[3]),
+        Number(twoArr[4]),
+        0
+      ).getTime();
+      return timeStampOne - timeStampTwo;
+    });
+
+    return sortedArr;
+  } catch (err) {
+    console.log("Err - sortBdsData: ", err);
+    return arr;
+  }
+};
+
+export const compareTwoData = (arr1, arr2, type = FILE_TYPE.GPS) => {
+  const allArr = [...new Set([...arr1, ...arr2])];
+
+  switch (type) {
+    case FILE_TYPE.GPS:
+      return sortGpsData(allArr);
+    case FILE_TYPE.BEIDOU:
+      return sortBdsData(allArr);
+    default:
+      return allArr;
+  }
 };
 
 export const combineMultipleBrdc = (filePaths) => {
