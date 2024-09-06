@@ -233,3 +233,13 @@ export const combineMultipleBrdc = (filePaths) => {
     return "";
   }
 };
+
+export const log = (title, content) => {
+  const currentDate = new Date();
+  const timeLog = `${currentDate.getUTCDate()}-${currentDate.getUTCMonth()}-${currentDate.getUTCFullYear()}, ${currentDate.getUTCHours()}:${currentDate.getUTCMinutes()}:${currentDate.getUTCSeconds()}`;
+  const logStr = `${timeLog} ${title}:` + "\n" + content;
+  console.log(logStr);
+};
+
+export const dateDifferenceInSeconds = (dateInitial, dateFinal) =>
+  (dateFinal - dateInitial) / 1_000;

@@ -9,11 +9,32 @@ import {
   splitParagraph,
   sortGpsData,
   compareTwoData,
+  log,
+  dateDifferenceInSeconds,
 } from "../utils/string_helper.js";
+import sqlite3 from "sqlite3";
 
 dotenv.config();
 
 const nasaFolderName = process.env.NASA_FOLDER;
+const keyTeleBot = process.env.KEY_TELE_BOT;
+const chatId = process.env.CHAT_ID;
+
+let isSendList = [];
+const maxTimeCheckAllowReSend = 120 * 60; // 2 tiếng resend 1 lần
+const maxTimeCheckAgentDied = 20 * 60; // 20 phút không update tính là chết
+
+//Connect sqlite db
+const DB_SOURCE = "db.sqlite";
+const db = new sqlite3.Database(DB_SOURCE, (err) => {
+  if (err) {
+    // Cannot open database
+    console.error(err.message);
+    throw err;
+  } else {
+    console.log("connect db success!");
+  }
+});
 
 const syncNasaData = async () => {
   try {
@@ -135,6 +156,93 @@ const syncBeidou = () => {
   } catch (error) {}
 };
 
+const checkAgentSendMessage = async (agent) => {
+  try {
+    const currentTime = new Date();
+    const lastUpdateTime = new Date(agent.updatedAt);
+
+    const differenceTime = dateDifferenceInSeconds(lastUpdateTime, currentTime);
+
+    if (differenceTime > maxTimeCheckAgentDied) {
+      const foundIndex = isSendList.findIndex((item) => item.Id === agent.Id);
+      let allowSend = false;
+      if (foundIndex === -1) allowSend = true;
+      else {
+        const differenceTimeLastSend = dateDifferenceInSeconds(
+          new Date(isSendList[foundIndex].sendTime),
+          currentTime
+        );
+        if (differenceTimeLastSend > maxTimeCheckAllowReSend) {
+          allowSend = true;
+        } else {
+          allowSend = false;
+        }
+      }
+
+      if (allowSend) {
+        const textMessage = `Trạm thu ${
+          agent.agentId
+        } mất kết nối từ ${lastUpdateTime.toUTCString()}\nThông tin trạm thu:\n${[
+          `name: ${agent.name}`,
+          `username: ${agent.username}`,
+          `publicUrl: ${agent.publicUrl}`,
+          `sshCommand: ${agent.sshCommand}`,
+          `note: ${agent.note}`,
+        ].join("\n")}`;
+
+        const res = await axios.post(
+          `https://api.telegram.org/bot${keyTeleBot}/sendMessage`,
+          null,
+          {
+            params: {
+              disable_notification: false,
+              chat_id: chatId,
+              text: textMessage,
+            },
+          }
+        );
+
+        if (res.data?.ok) {
+          if (foundIndex === -1)
+            isSendList.push({ Id: agent.Id, sendTime: currentTime });
+          else
+            isSendList.splice(foundIndex, 1, {
+              ...isSendList[foundIndex],
+              sendTime: currentTime,
+            });
+        } else log("[sync_data] send message to telegram", "False");
+      }
+    } else {
+      const foundIndex = isSendList.findIndex((item) => {
+        item.Id === agent.Id;
+      });
+      if (foundIndex !== -1) {
+        isSendList.splice(foundIndex, 1);
+      }
+    }
+  } catch (error) {
+    log("[sync_data] - checkAgentSendMessage", error.toString());
+  }
+};
+
+const checkStatusAgent = async () => {
+  try {
+    const sql = `SELECT * FROM Agents`;
+    db.all(sql, async (err, result) => {
+      if (err) {
+        log(`[sync_data] - task_check_agent_tele_bot`, "Get list agents false");
+      } else {
+        for (let i = 0; i < result.length; i++) {
+          const agent = result[i];
+          await checkAgentSendMessage(agent);
+        }
+      }
+    });
+  } catch (error) {
+    log(`checkStatusAgent: ${error.toString()}`);
+  }
+};
+
 const task = cron.schedule("*/5 * * * *", () => {
   syncNasaData();
 });
@@ -143,5 +251,10 @@ const task_bd = cron.schedule("0 5 * * * *", () => {
   syncBeidou();
 });
 
+const task_check_agent_tele_bot = cron.schedule("*/2 * * * *", () => {
+  checkStatusAgent();
+});
+
 task.start();
+task_check_agent_tele_bot.start();
 //task_bd.start();
