@@ -55,6 +55,7 @@ class Watcher extends events.EventEmitter {
   async uploadFile(filePath) {
     try {
       const ext = path.extname(filePath);
+      console.log(ext);
       if (ext.toLowerCase().match(REGEX_EXT)) {
         const result = await uploadFileToServer(filePath);
         if (result) {

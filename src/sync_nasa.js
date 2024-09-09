@@ -11,8 +11,10 @@ import {
   compareTwoData,
   log,
   dateDifferenceInSeconds,
+  getLastTwoHour,
 } from "../utils/string_helper.js";
 import sqlite3 from "sqlite3";
+import { FILE_TYPE } from "../utils/constant.js";
 
 dotenv.config();
 
@@ -77,19 +79,19 @@ const syncNasaData = async () => {
             "UTF-8"
           );
 
+          const nasaParagraph = splitParagraph(nasaFileData);
+          nasaParagraph.shift();
+          const _nasaParagraph = [];
+          for (let i = 0; i < nasaParagraph.length; i += 2) {
+            if (nasaParagraph[i] && nasaParagraph[i + 1])
+              _nasaParagraph.push(nasaParagraph[i] + nasaParagraph[i + 1]);
+          }
+
           if (
             fs.existsSync(
               path.join(process.env.UPLOAD_FOLDER, gpsCombineFileName)
             )
           ) {
-            const nasaParagraph = splitParagraph(nasaFileData);
-            nasaParagraph.shift();
-            const _nasaParagraph = [];
-            for (let i = 0; i < nasaParagraph.length; i += 2) {
-              if (nasaParagraph[i] && nasaParagraph[i + 1])
-                _nasaParagraph.push(nasaParagraph[i] + nasaParagraph[i + 1]);
-            }
-
             const existCombineFileData = fs.readFileSync(
               process.env.UPLOAD_FOLDER + gpsCombineFileName,
               "UTF-8"
@@ -126,9 +128,26 @@ const syncNasaData = async () => {
               final_mergeData.join("")
             );
           } else {
+            // Them 2h cuoi cua ngay hom truoc vao file
+            const day = getDayOfYear(1);
+            let pastFilename = `GPSbrdc${day.padStart(3, "0")}0.${new Date()
+              .getUTCFullYear()
+              .toString()
+              .slice(-2)}n`;
+
+            const pastTwoHoursData = getLastTwoHour(
+              pastFilename,
+              FILE_TYPE.GPS
+            );
+
+            let final_mergeData = compareTwoData(
+              [],
+              [...pastTwoHoursData, ..._nasaParagraph]
+            );
+
             fs.writeFileSync(
               process.env.UPLOAD_FOLDER + gpsCombineFileName,
-              nasaFileData
+              final_mergeData.join("")
             );
           }
         }

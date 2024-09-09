@@ -13,9 +13,9 @@ import { verifyToken } from "./middleware.js";
 import {
   splitParagraph,
   compareTwoData,
-  sortGpsData,
-  sortBdsData,
   combineMultipleBrdc,
+  getLastTwoHour,
+  getDayOfYear,
 } from "../utils/string_helper.js";
 import { FILE_TYPE } from "../utils/constant.js";
 
@@ -578,13 +578,23 @@ app.post("/api/upload", upload.single("file"), (req, res) => {
             _oldParagraph.push(oldParagraph[i] + oldParagraph[i + 1]);
         }
 
-        let mergedData = [...new Set([..._oldParagraph, ..._newParagraph])];
+        // Them 2h cuoi cua ngay hom truoc vao file
+        const day = getDayOfYear(1);
+        let pastFilename = `${fileType}brdc${day.padStart(3, "0")}0.${new Date()
+          .getUTCFullYear()
+          .toString()
+          .slice(-2)}n`;
+        const pastTwoHoursData = getLastTwoHour(pastFilename, fileType);
+
+        let mergedData = [
+          ...new Set([...pastTwoHoursData, ..._oldParagraph, ..._newParagraph]),
+        ];
 
         const brdcFileName = req.file.filename.slice(-12);
 
         //Nếu là file BEIDOU
         if (isBDS) {
-          const sortedData = sortBdsData(mergedData);
+          const sortedData = compareTwoData([], mergedData, fileType);
           mergedData = [...sortedData];
         } else {
           //nasa file
@@ -638,6 +648,7 @@ app.post("/api/upload", upload.single("file"), (req, res) => {
             filename: brdcFileName,
           },
         ]);
+
         if (combineData)
           fs.writeFileSync(
             `${uploadFolderName}MULTIPLE${brdcFileName}`,

@@ -1,6 +1,16 @@
+import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
-import { FILE_TYPE, REGEX_SPLIT, REGEX_SPLIT_BDS } from "./constant.js";
+import {
+  FILE_TYPE,
+  REGEX_SPLIT,
+  REGEX_SPLIT_BDS,
+  REGEX_SPLIT_GLONASS,
+} from "./constant.js";
+
+dotenv.config();
+
+const uploadFolderName = process.env.UPLOAD_FOLDER;
 
 export const splitParagraph = (s, type = FILE_TYPE.GPS) => {
   if (!s) return [];
@@ -72,7 +82,7 @@ export const appendAgentFile = (filePath, ip, lineData) => {
   }
 };
 
-export const getDayOfYear = () => {
+export const getDayOfYear = (sub = 0) => {
   const now = new Date();
   const now_utc = new Date(now.toUTCString().slice(0, -4));
   const start = new Date(now_utc.getUTCFullYear(), 0, 0);
@@ -81,7 +91,7 @@ export const getDayOfYear = () => {
     start +
     (start.getTimezoneOffset() - now_utc.getTimezoneOffset()) * 60 * 1000;
   const oneDay = 1000 * 60 * 60 * 24;
-  const day = Math.floor(diff / oneDay);
+  const day = Math.floor(diff / oneDay) - sub;
   return day.toString();
 };
 
@@ -243,3 +253,61 @@ export const log = (title, content) => {
 
 export const dateDifferenceInSeconds = (dateInitial, dateFinal) =>
   (dateFinal - dateInitial) / 1_000;
+
+export const getLastTwoHour = (prevFilename, type = FILE_TYPE.GPS) => {
+  try {
+    let regex = "";
+    if (type === FILE_TYPE.GPS) regex = REGEX_SPLIT;
+    else if (type === FILE_TYPE.BEIDOU) regex = REGEX_SPLIT_BDS;
+    else if (type === FILE_TYPE.GLONASS) regex = REGEX_SPLIT_GLONASS;
+
+    let result = [];
+
+    if (!fs.existsSync(path.join(uploadFolderName, prevFilename))) {
+      return [];
+    }
+
+    const oldFileData = fs.readFileSync(
+      uploadFolderName + prevFilename,
+      "UTF-8"
+    );
+
+    const oldParagraph = splitParagraph(oldFileData, type);
+
+    const firstElementOld = oldParagraph.shift();
+    const _oldParagraph = [];
+    for (let i = 0; i < oldParagraph.length; i += 2) {
+      if (oldParagraph[i] && oldParagraph[i + 1])
+        _oldParagraph.push(oldParagraph[i] + oldParagraph[i + 1]);
+    }
+
+    let h = -1;
+    let count = 0;
+
+    for (let k = _oldParagraph.length - 1; k > -1; k--) {
+      const itemStr = _oldParagraph[k];
+      const strTime = itemStr.match(regex)[0];
+
+      const timeArr = strTime
+        .split(" ")
+        .filter((el) => el)
+        .slice(1);
+
+      const hours = timeArr[3];
+
+      if (h !== hours) {
+        h = hours;
+        count++;
+      }
+
+      if (count > 2) break;
+
+      result.push(itemStr);
+    }
+
+    return result.reverse();
+  } catch (error) {
+    log("[string_helper] - getLastTwoHour", error.toString());
+    return [];
+  }
+};
