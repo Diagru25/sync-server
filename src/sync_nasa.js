@@ -140,13 +140,13 @@ const syncNasaData = async () => {
               FILE_TYPE.GPS
             );
 
-            if (nasaHeader.includes("HEADER"))
-              final_mergeData.unshift(nasaHeader);
-
             let final_mergeData = compareTwoData(
               [],
               [...pastTwoHoursData, ..._nasaParagraph]
             );
+
+            if (nasaHeader.includes("HEADER"))
+              final_mergeData.unshift(nasaHeader);
 
             fs.writeFileSync(
               process.env.UPLOAD_FOLDER + gpsCombineFileName,
