@@ -80,7 +80,7 @@ const syncNasaData = async () => {
           );
 
           const nasaParagraph = splitParagraph(nasaFileData);
-          nasaParagraph.shift();
+          const nasaHeader = nasaParagraph.shift();
           const _nasaParagraph = [];
           for (let i = 0; i < nasaParagraph.length; i += 2) {
             if (nasaParagraph[i] && nasaParagraph[i + 1])
@@ -139,6 +139,9 @@ const syncNasaData = async () => {
               pastFilename,
               FILE_TYPE.GPS
             );
+
+            if (nasaHeader.includes("HEADER"))
+              final_mergeData.unshift(nasaHeader);
 
             let final_mergeData = compareTwoData(
               [],
