@@ -428,7 +428,29 @@ app.put("/api/agents/status", async (req, res) => {
 app.get("/api/files", (req, res) => {
   try {
     const query = req.query;
-    const files = fs.readdirSync(__dirname + "/" + uploadFolderName);
+    const files = fs
+      .readdirSync(__dirname + "/" + uploadFolderName)
+      .sort((a, b) => {
+        // Lấy số ngày và năm từ tên file, chỉ dùng "brdc" làm anchor
+        const matchA = a.match(/brdc(\d{4})\.(\d{2})n/);
+        const matchB = b.match(/brdc(\d{4})\.(\d{2})n/);
+
+        if (!matchA || !matchB) return 0;
+
+        const yearA = parseInt(matchA[2]);
+        const yearB = parseInt(matchB[2]);
+
+        const dayA = parseInt(matchA[1]);
+        const dayB = parseInt(matchB[1]);
+
+        // So sánh năm trước
+        if (yearA !== yearB) {
+          return yearA - yearB; // Sắp xếp năm giảm dần (mới nhất lên đầu)
+        }
+
+        // Nếu cùng năm thì so sánh ngày
+        return dayA - dayB; // Sắp xếp ngày giảm dần
+      });
 
     let data = [];
 
@@ -738,6 +760,6 @@ app.get("/api/refactorAllBrdc", (req, res) => {
   }
 });
 
-app.listen(5000, () => {
+app.listen(5001, () => {
   console.log("Server is running at port 5000");
 });
