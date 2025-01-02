@@ -431,25 +431,31 @@ app.get("/api/files", (req, res) => {
     const files = fs
       .readdirSync(__dirname + "/" + uploadFolderName)
       .sort((a, b) => {
-        // Lấy số ngày và năm từ tên file, chỉ dùng "brdc" làm anchor
-        const matchA = a.match(/brdc(\d{4})\.(\d{2})n/);
-        const matchB = b.match(/brdc(\d{4})\.(\d{2})n/);
+        try {
+          // Lấy số ngày và năm từ tên file, chỉ dùng "brdc" làm anchor
+          const matchA = a.match(/brdc(\d{4})\.(\d{2})n/);
+          const matchB = b.match(/brdc(\d{4})\.(\d{2})n/);
 
-        if (!matchA || !matchB) return 0;
+          if (!matchA || !matchB) return 0;
 
-        const yearA = parseInt(matchA[2]);
-        const yearB = parseInt(matchB[2]);
+          const yearA = parseInt(matchA[2]);
+          const yearB = parseInt(matchB[2]);
 
-        const dayA = parseInt(matchA[1]);
-        const dayB = parseInt(matchB[1]);
+          const dayA = parseInt(matchA[1].substring(0, 3));
+          const dayB = parseInt(matchB[1].substring(0, 3));
 
-        // So sánh năm trước
-        if (yearA !== yearB) {
-          return yearA - yearB; // Sắp xếp năm giảm dần (mới nhất lên đầu)
+          console.log(dayA, dayB);
+
+          // So sánh năm trước
+          if (yearA !== yearB) {
+            return yearA - yearB; // Sắp xếp năm giảm dần (mới nhất lên đầu)
+          }
+
+          // Nếu cùng năm thì so sánh ngày
+          return dayA - dayB; // Sắp xếp ngày giảm dần
+        } catch (e) {
+          return 0;
         }
-
-        // Nếu cùng năm thì so sánh ngày
-        return dayA - dayB; // Sắp xếp ngày giảm dần
       });
 
     let data = [];
