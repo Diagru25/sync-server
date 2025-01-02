@@ -444,8 +444,6 @@ app.get("/api/files", (req, res) => {
           const dayA = parseInt(matchA[1].substring(0, 3));
           const dayB = parseInt(matchB[1].substring(0, 3));
 
-          console.log(dayA, dayB);
-
           // So sánh năm trước
           if (yearA !== yearB) {
             return yearA - yearB; // Sắp xếp năm giảm dần (mới nhất lên đầu)
