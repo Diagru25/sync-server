@@ -446,11 +446,11 @@ app.get("/api/files", (req, res) => {
 
           // So sánh năm trước
           if (yearA !== yearB) {
-            return yearA - yearB; // Sắp xếp năm giảm dần (mới nhất lên đầu)
+            return yearB - yearA; // Sắp xếp năm giảm dần (mới nhất lên đầu)
           }
 
           // Nếu cùng năm thì so sánh ngày
-          return dayA - dayB; // Sắp xếp ngày giảm dần
+          return dayB - dayA; // Sắp xếp ngày giảm dần
         } catch (e) {
           return 0;
         }
@@ -461,7 +461,7 @@ app.get("/api/files", (req, res) => {
     switch (query.type) {
       case "GPS":
         data = files
-          .filter((item) => item.includes(FILE_TYPE.GPS))
+          .filter((item) => item.includes(FILE_TYPE.GPS) && !item.includes("_"))
           .map((item) => ({
             filename: item,
             filePath: `https://${req.headers.host}/be/api/download/${item}`,
@@ -469,7 +469,9 @@ app.get("/api/files", (req, res) => {
         break;
       case "BEIDOU":
         data = files
-          .filter((item) => item.includes(FILE_TYPE.BEIDOU))
+          .filter(
+            (item) => item.includes(FILE_TYPE.BEIDOU) && !item.includes("_")
+          )
           .map((item) => ({
             filename: item,
             filePath: `https://${req.headers.host}/be/api/download/${item}`,
@@ -477,7 +479,9 @@ app.get("/api/files", (req, res) => {
         break;
       case "GLONASS":
         data = files
-          .filter((item) => item.includes(FILE_TYPE.GLONASS))
+          .filter(
+            (item) => item.includes(FILE_TYPE.GLONASS) && !item.includes("_")
+          )
           .map((item) => ({
             filename: item,
             filePath: `https://${req.headers.host}/be/api/download/${item}`,
@@ -485,7 +489,9 @@ app.get("/api/files", (req, res) => {
         break;
       case "MULTIPLE":
         data = files
-          .filter((item) => item.includes(FILE_TYPE.MULTIPLE))
+          .filter(
+            (item) => item.includes(FILE_TYPE.MULTIPLE) && !item.includes("_")
+          )
           .map((item) => ({
             filename: item,
             filePath: `https://${req.headers.host}/be/api/download/${item}`,
@@ -499,7 +505,6 @@ app.get("/api/files", (req, res) => {
       // code block
     }
 
-    data = data.reverse();
     return res.send({
       success: true,
       data,
@@ -764,6 +769,6 @@ app.get("/api/refactorAllBrdc", (req, res) => {
   }
 });
 
-app.listen(5000, () => {
+app.listen(5001, () => {
   console.log("Server is running at port 5000");
 });
