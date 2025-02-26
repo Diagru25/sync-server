@@ -552,6 +552,34 @@ app.get("/api/download/:filename", (req, res) => {
   }
 });
 
+app.delete("/api/delete/:filename", (req, res) => {
+  try {
+    let folderName = uploadFolderName;
+
+    const filePath = `${__dirname}/${folderName}/${req.params.filename}`;
+
+    fs.unlink(filePath, (err) => {
+      if (err) {
+        return res.status(500).send({
+          success: false,
+          message: "File deletion failed.",
+          error: err.message,
+        });
+      }
+      return res.send({
+        success: true,
+        message: "File deleted successfully.",
+      });
+    });
+  } catch (error) {
+    return res.status(500).send({
+      success: false,
+      message: "An error occurred.",
+      error: error.message,
+    });
+  }
+});
+
 app.post("/api/upload", upload.single("file"), (req, res) => {
   try {
     if (req.fileValidationError) {
